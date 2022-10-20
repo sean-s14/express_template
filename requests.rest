@@ -3,7 +3,7 @@ GET http://localhost:3000/
 
 ###
 GET http://localhost:3000/auth
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJpYXQiOjE2NjU1MTg2OTEsImV4cCI6MTY2NTUxOTI5MX0.3NMCPNWdg-M0b63Ab4-evtiLBsD2cxxcjMVubE4xJco
+Authorization: Bearer token-xxx
 
 ###
 POST http://localhost:3000/auth/access
@@ -18,7 +18,7 @@ POST http://localhost:3000/auth/refresh
 Content-Type: application/json
 
 {
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJpYXQiOjE2NjU1MTg2OTEsImV4cCI6MTY2NTY5MTQ5MX0.niGnEzrpn2svV_PtqMPXRIcU49vw7ZGiv4qQbnTVlsA"
+    "refreshToken": ""
 }
 
 ###
@@ -26,5 +26,5 @@ DELETE http://localhost:3000/auth/logout
 Content-Type: application/json
 
 {
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYWRtaW4iLCJpYXQiOjE2NjU1MTg3MjUsImV4cCI6MTY2NTY5MTUyNX0._C_37Ag-dP1zmLXMcEZnM2I0nJ62fQ2StNhV1w829EE"
+    "refreshToken": ""
 }

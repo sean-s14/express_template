@@ -1,0 +1,14 @@
+org: sean14
+app: express-template-2
+service: express-template-2
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+functions:
+  api:
+    handler: handler.handler
+    events:
+      - httpApi: '*'
