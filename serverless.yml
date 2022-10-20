@@ -1,14 +1,16 @@
 org: sean14
-app: express-template-2
-service: express-template-2
+app: express-template
+service: express-template
 frameworkVersion: '3'
 
 provider:
   name: aws
   runtime: nodejs14.x
+  region: eu-west-1
+  stage: dev
 
 functions:
   api:
-    handler: handler.handler
+    handler: app.handler
     events:
       - httpApi: '*'
