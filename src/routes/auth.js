@@ -6,21 +6,12 @@ const { generateFromEmail, generateUsername } = require("unique-username-generat
 
 const UserSchema = require('../schemas/user');
 const TokenSchema = require('../schemas/token');
-const { authenticateToken } = require('../utils/authentication');
+const { generateAccessToken, generateRefreshToken } = require('../utils/auth/tokens');
 
-
-function generateAccessToken(user) {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' });
-}
-
-function generateRefreshToken(user) {
-    return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '2d' });
-}
-
-router.use((req, res, next) => {
-    // console.log('Request Body:', req?.body);
-    next()
-})
+// router.use((req, res, next) => {
+//     console.log('Request Body:', req?.body);
+//     next()
+// })
 
 // =============== SIGNUP ===============
 router.post('/signup', async (req, res) => {
@@ -95,7 +86,7 @@ router.post('/access', async (req, res) => {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(403).json("Password entered is invalid");
 
-    const user2 = { username: username };
+    const user2 = { username: username, id: user._id, role: user.role };
     const accessToken = generateAccessToken(user2);
     const refreshToken = generateRefreshToken(user2);
 
@@ -168,9 +159,17 @@ router.post('/refresh', async (req, res) => {
 
 // =============== LOGOUT ===============
 router.delete('/logout', async (req, res) => {
-    // deleteRefreshToken(req)
-    const token = await TokenSchema.findOneAndDelete({ token: req.body.refreshToken });
-    return res.sendStatus(204);
+    const { refreshToken } = req.signedCookies;
+    try {
+        const token = await TokenSchema.findOneAndDelete({ token: refreshToken });
+        if (token === null) {
+            return res.status(400).json({ error: "Unable to log out" })
+        }
+        return res.status(204);
+    } catch(e) {
+        console.log(e);
+        return res.status(500).json(e.errors);
+    }
 })
 
 module.exports = router

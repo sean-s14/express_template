@@ -24,7 +24,7 @@ main().catch(err => console.log(err));
 
 
 // =============== MIDDLEWARE ===============
-let whitelist = ['http://localhost:19006']
+let whitelist = [env.CORS_WHITELIST]
 let corsOptions = {
     origin: function (origin, callback) {
         //   console.log("Origin:", origin);
@@ -44,16 +44,22 @@ app.use(cookieParser(env?.COOKIE_SECRET));
 
 
 // =============== ROUTES ===============
+const User = require('./src/routes/user');
+app.use('/user', User);
+
 const Users = require('./src/routes/users');
 app.use('/users', Users);
 
 const Auth = require('./src/routes/auth');
 app.use('/auth', Auth);
 
+const Items = require('./src/routes/items');
+app.use('/items', Items);
+
 
 // =============== LISTENER ===============
 // const port = env.PORT;
-const port = env.NODE_ENV === 'production' ? 80 : 3000
+const port = env.NODE_ENV === 'production' ? 8080 : 3000
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
