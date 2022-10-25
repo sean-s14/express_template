@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 
 const UserSchema = require('../schemas/user');
-const { authenticateToken } = require('../middleware/auth/authentication');
+const { authenticateToken } = require('../middleware/auth');
+const { isAdmin, isOwnerOrAdmin } = require('../utils/permissions/auth');
+const { ERRORS } = require('../utils/error_messages');
 
 // ========== GET USER ==========
 router.get('/', authenticateToken, async (req, res) => {
@@ -20,6 +22,10 @@ router.get('/', authenticateToken, async (req, res) => {
 // ========== UPDATE USER ==========
 router.patch('/', authenticateToken, async (req, res) => {
     const { user, body } = req;
+
+    if (body.hasOwnProperty('role') && !isAdmin(user)) {
+        return res.status(403).send({"error": ERRORS.NOT_ADMIN});
+    }
 
     try {
         const userObj = await UserSchema.findOneAndUpdate(

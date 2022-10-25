@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 const ItemSchema = require('../schemas/item');
-const { authenticateToken } = require('../middleware/auth/authentication');
-const { isAdmin, isOwner } = require('../middleware/permissions/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { isAdmin, isOwner } = require('../utils/permissions/auth');
 const { ERRORS } = require('../utils/error_messages');
 
 // middleware that is specific to this router

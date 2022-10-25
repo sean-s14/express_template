@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 
 const UserSchema = require('../schemas/user');
-const { authenticateToken } = require('../middleware/auth/authentication');
-const { isAdmin, isOwnerOrAdmin } = require('../middleware/permissions/auth');
+const { authenticateToken } = require('../middleware/auth');
+const { isAdmin, isOwnerOrAdmin } = require('../utils/permissions/auth');
+const { ERRORS } = require('../utils/error_messages');
 
 // middleware that is specific to this router
 // router.use((req, res, next) => {
@@ -53,11 +54,14 @@ router.get('/:id', authenticateToken, async (req, res) => {
 router.patch('/:id', authenticateToken, async (req, res) => {
     const { user, body } = req;
     const userId = req.params.id;
+    console.log("Body:", body);
 
     if (!isOwnerOrAdmin(user, userId)) {
-        return res.status(403).send({
-            "error": "Only the owner of this account or an administrator can perform this action"
-        });
+        return res.status(403).send({"error": ERRORS.NOT_ADMIN_OR_OWNER});
+    }
+
+    if (body.hasOwnProperty('role') && !isAdmin(user)) {
+        return res.status(403).send({"error": ERRORS.NOT_ADMIN});
     }
 
     try {

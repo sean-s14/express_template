@@ -1,7 +1,7 @@
 // import mongoose from 'mongoose';
 const mongoose = require('mongoose');
 // const { Schema } = mongoose;
-const { ROLES } = require('../middleware/permissions/roles');
+const { ROLES } = require('../utils/permissions/roles');
 
 const userSchema = new mongoose.Schema({
     role: {
