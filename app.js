@@ -12,15 +12,22 @@ const morgan = require('morgan'); // Adds some logging capabilities
 const cookieParser = require('cookie-parser');
 
 // =============== DATABASE CONNECTION ===============
-
-async function main() {
-    await mongoose.connect(
+mongoose.connect(
         env?.DEV_LOCAL_DATABASE ? env.DEV_LOCAL_DATABASE : env?.DEV_REMOTE_DATABASE,
         // TODO: Set this to false when in production
         { autoIndex: false }
-    );
-}
-main().catch(err => console.log(err));
+    )
+    .then( () => console.log('MongoDB Connected...'))
+    .catch( err => console.log(err));
+
+// async function main() {
+//     await mongoose.connect(
+//         env?.DEV_LOCAL_DATABASE ? env.DEV_LOCAL_DATABASE : env?.DEV_REMOTE_DATABASE,
+//         // TODO: Set this to false when in production
+//         { autoIndex: false }
+//     );
+// }
+// main().catch(err => console.log(err));
 
 
 // =============== MIDDLEWARE ===============

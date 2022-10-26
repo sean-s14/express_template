@@ -1,58 +1,61 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const { generateFromEmail, generateUsername } = require("unique-username-generator");
 
-const UserSchema = require('../schemas/user');
-const TokenSchema = require('../schemas/token');
-const { generateAccessToken, generateRefreshToken } = require('../utils/auth/tokens');
+const UserSchema = require("../schemas/user");
+const TokenSchema = require("../schemas/token");
+const { generateAccessToken, generateRefreshToken } = require("../utils/auth/tokens");
+const { MSG_TYPES } = require('../utils/messageTypes');
 
 // router.use((req, res, next) => {
-//     console.log('Request Body:', req?.body);
+//     console.log("Request Body:", req?.body);
 //     next()
 // })
 
 // =============== SIGNUP ===============
-router.post('/signup', async (req, res) => {
-    let { username, email, password } = req.body;
+router.post("/signup", async (req, res) => {
+    const { email, password, password2 } = req.body;
+    let { username } = req.body;
 
     // ========== PASSWORD VALIDATION ==========
-    if (password.length < 8) {
-        return res.status(400).json({ err: "Password must be at least 8 characters long" })
+    if (!password) {
+        return res.status(400).json({ password: "Please enter a password" });
+    }
+    if (!password2) {
+        return res.status(400).json({ password2: "Please enter a matching password" });
+    }
+    if (password !== password2) {
+        return res.status(400).json({ password2: "Passwords do not match" });
+    }
+    if (password && password.length < 8) {
+        return res.status(400).json({ password: "Password must be at least 8 characters long" });
     }
 
     // Verify that no user with username/email already exists
     if (!username && !email) {
-        return res.status(400).json({ err: "You must enter either an email or username" });
+        return res.status(400).json({ [MSG_TYPES.ERROR]: "You must enter either an email or username" });
     }
-    
     if (email) {
         const userExists = await UserSchema.findOne({ email: email });
         if (userExists) {
-            return res.status(400).json({ err: 'A user with this email already exists' });
+            return res.status(400).json({ email: "A user with this email already exists" });
         }
     } 
-
     if (username) {
         const userExists = await UserSchema.findOne({ username: username });
         if (userExists) {
-            return res.status(400).json({ err: 'A user with this username already exists' });
+            return res.status(400).json({ username: "A user with this username already exists" });
         }
     } else if (!username) {
-        // If no username given then generate default username
-        if (email) {
-            username = generateFromEmail(email, 5);
-        } else {
-            username = generateUsername("", 5, 20);
-        }
+        // Generate username if no username given
+        username = generateFromEmail(email, 5);
     }
-
 
     // Hash password
     const salt = bcrypt.genSaltSync(13)
     const hash = await bcrypt.hash(password, salt);
-
 
     // Create user
     try {
@@ -64,18 +67,14 @@ router.post('/signup', async (req, res) => {
         await user.save();
     } catch(e) {
         console.log(e);
-        // console.log("Errors:", e.errors);
         return res.status(500).json(e.errors)
-        // return res.status(400).json({ err: "Something went wrong when creating account" })
     }
 
-    // console.log(users)
-
-    return res.status(201).json({ msg: "Your account has been created" })
+    return res.status(201).json({ [MSG_TYPES.SUCCESS]: "Your account has been created" })
 })
 
 // =============== LOGIN ===============
-router.post('/access', async (req, res) => {
+router.post("/access", async (req, res) => {
     // TODO: Search through database for user with specified username/email and then match password 
     const { username, password } = req.body;
 
@@ -115,25 +114,25 @@ router.post('/access', async (req, res) => {
         // return res.status(400).json("Failed to create refresh token");
     }
 
-    // res.cookie('refreshToken', refreshToken, {httpOnly: true, secure: true});
-    res.cookie('refreshToken', refreshToken, { httpOnly: true, signed: true });
-    // res.cookie('refreshToken', refreshToken);
+    // res.cookie("refreshToken", refreshToken, {httpOnly: true, secure: true});
+    res.cookie("refreshToken", refreshToken, { httpOnly: true, signed: true });
+    // res.cookie("refreshToken", refreshToken);
 
     return res.json({ accessToken: accessToken}) // , refreshToken: refreshToken });
 });
 
 // =============== REFRESH TOKEN ===============
-router.post('/refresh', async (req, res) => {
+router.post("/refresh", async (req, res) => {
     const { refreshToken } = req.signedCookies;
     // const { refreshToken } = req.body;
-    if (refreshToken == null) return res.sendStatus(401);
+    if (refreshToken == null) return res.status(401).json({[MSG_TYPES.ERROR]:"No refresh token found in cookie"});
 
     const refreshTokenInDB = await TokenSchema.findOne({ token: refreshToken });
-    if (!refreshTokenInDB) return res.status(403).json({ err: "Could not find refresht token in database" });
+    if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresht token in database" });
     // if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
 
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) return res.status(403).json({[MSG_TYPES.ERROR]:"Unable to verify refresh token"});
         const accessToken = generateAccessToken({ username: user.username });
         // Replace old refresh token
         // deleteRefreshToken(req)
@@ -151,19 +150,19 @@ router.post('/refresh', async (req, res) => {
             return res.status(500).json(e.errors);
         }
 
-        res.cookie('refreshToken', newRefreshToken, { httpOnly: true, signed: true });
+        res.cookie("refreshToken", newRefreshToken, { httpOnly: true, signed: true });
         // Return 2 new tokens
         return res.json({ accessToken: accessToken }) // , refreshToken: newRefreshToken });
     })
 })
 
 // =============== LOGOUT ===============
-router.delete('/logout', async (req, res) => {
+router.delete("/logout", async (req, res) => {
     const { refreshToken } = req.signedCookies;
     try {
         const token = await TokenSchema.findOneAndDelete({ token: refreshToken });
         if (token === null) {
-            return res.status(400).json({ error: "Unable to log out" })
+            return res.status(400).json({ [MSG_TYPES.ERROR]: "Unable to log out" })
         }
         return res.status(204);
     } catch(e) {

@@ -4,7 +4,7 @@ const router = express.Router();
 const UserSchema = require('../schemas/user');
 const { authenticateToken } = require('../middleware/auth');
 const { isAdmin, isOwnerOrAdmin } = require('../utils/permissions/auth');
-const { ERRORS } = require('../utils/error_messages');
+const { ERRORS } = require('../utils/errorMessages');
 
 // ========== GET USER ==========
 router.get('/', authenticateToken, async (req, res) => {
