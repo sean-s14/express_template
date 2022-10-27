@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
         maxLength: 50
     },
     birth_date: Date,
+    photo: { type: String },
+    googleId: { type: String },
+    githubId: { type: String },
+    facebookId: { type: String },
     createdAt: {
         type: Date,
         immutable: true,

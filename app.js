@@ -10,6 +10,10 @@ const cors = require('cors'); // Add headers stating that your API accepts reque
 const helmet = require('helmet'); // Secure Express APIs by defining various HTTP headers
 const morgan = require('morgan'); // Adds some logging capabilities
 const cookieParser = require('cookie-parser');
+// const session = require('express-session');
+// const cookieSession = require("cookie-session");
+// const passport = require('passport');
+// const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 // =============== DATABASE CONNECTION ===============
 mongoose.connect(
@@ -43,11 +47,22 @@ let corsOptions = {
     }
 }
 // app.use(cors(corsOptions));
-app.use(cors());
+app.use(cors({credentials: true, origin: env.CLIENT_URL}));
 app.use(helmet()); // adding Helmet to enhance your API's security
 app.use(bodyParser.json()); // using bodyParser to parse JSON bodies into JS objects
 app.use(morgan('combined')); // adding morgan to log HTTP requests
 app.use(cookieParser(env?.COOKIE_SECRET));
+// app.use(session({
+//     secret: 'a-random-session-secret-141414',
+//     resave: false,
+//     saveUninitialized: true,
+//     cookie: { secure: true }
+// }));
+// app.use(cookieSession({
+//     name: "session", 
+//     keys: ["lama"], 
+//     maxAge: 24 * 60 * 60 * 100
+// }));
 
 
 // =============== ROUTES ===============

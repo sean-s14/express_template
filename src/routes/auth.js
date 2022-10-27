@@ -74,14 +74,13 @@ router.post("/signup", async (req, res) => {
 })
 
 // =============== LOGIN ===============
-router.post("/access", async (req, res) => {
+router.post("/login", async (req, res) => {
     // TODO: Search through database for user with specified username/email and then match password 
     const { username, password } = req.body;
 
-    // const user = users.find( user => user.username === username);
     const user = await UserSchema.findOne({ username: username });
     if (!user) return res.status(404).json("User with specified username could not be found");
-        
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(403).json("Password entered is invalid");
 
@@ -89,7 +88,6 @@ router.post("/access", async (req, res) => {
     const accessToken = generateAccessToken(user2);
     const refreshToken = generateRefreshToken(user2);
 
-    // refreshTokens.push(refreshToken);
     try {
         // console.log("Refresh Token:", refreshToken);
         // console.log("User ID:", user._id);
@@ -118,17 +116,18 @@ router.post("/access", async (req, res) => {
     res.cookie("refreshToken", refreshToken, { httpOnly: true, signed: true });
     // res.cookie("refreshToken", refreshToken);
 
-    return res.json({ accessToken: accessToken}) // , refreshToken: refreshToken });
+    return res.json({ accessToken: accessToken }) // , refreshToken: refreshToken });
 });
 
 // =============== REFRESH TOKEN ===============
 router.post("/refresh", async (req, res) => {
     const { refreshToken } = req.signedCookies;
-    // const { refreshToken } = req.body;
+    // console.log("Signed Cookie:", refreshToken);
+
     if (refreshToken == null) return res.status(401).json({[MSG_TYPES.ERROR]:"No refresh token found in cookie"});
 
     const refreshTokenInDB = await TokenSchema.findOne({ token: refreshToken });
-    if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresht token in database" });
+    if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresh token in database" });
     // if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
 
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {

@@ -5,6 +5,7 @@ const ItemSchema = require('../schemas/item');
 const { authenticateToken } = require('../middleware/auth');
 const { isAdmin, isOwner } = require('../utils/permissions/auth');
 const { ERRORS } = require('../utils/errorMessages');
+const { MSG_TYPES } = require('../utils/messageTypes');
 
 // middleware that is specific to this router
 // router.use((req, res, next) => {
@@ -75,7 +76,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
         const itemObj = await ItemSchema.findOne({ _id: id });
 
         if (itemObj === null) {
-            return res.status(404).json({ error: `Item could not be found` });
+            return res.status(404).json({ [MSG_TYPES.ERROR]: `Item could not be found` });
         }
 
         if (isOwner(user, itemObj) || isAdmin(user)) {
@@ -105,12 +106,12 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         const itemObj = await ItemSchema.findOne({ _id: id });
 
         if (itemObj === null) {
-            return res.status(404).json({ error: `Item could not be found` });
+            return res.status(404).json({ [MSG_TYPES.ERROR]: `Item could not be found` });
         }
 
         if (isOwner(user, itemObj) || isAdmin(user)) {
             const itemObjDeleted = await ItemSchema.findOneAndDelete({ _id: id });
-            return res.status(200).json({ msg: `The item titled "${itemObjDeleted.title}" has been deleted` });
+            return res.status(200).json({ [MSG_TYPES.SUCCESS]: `The item titled "${itemObjDeleted.title}" has been deleted` });
         } else {
             return res.status(403).send({
                 "error": ERRORS.NOT_ADMIN_OR_OWNER
