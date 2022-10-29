@@ -158,6 +158,9 @@ router.post("/refresh", async (req, res) => {
 // =============== LOGOUT ===============
 router.delete("/logout", async (req, res) => {
     const { refreshToken } = req.signedCookies;
+    if (refreshToken) {
+        res.clearCookie("refreshToken", { httpOnly: true, signed: true });
+    }
     try {
         const token = await TokenSchema.findOneAndDelete({ token: refreshToken });
         if (token === null) {
