@@ -4,10 +4,7 @@ const mongoose = require('mongoose');
 const { ROLES } = require('../utils/permissions/roles');
 
 const userSchema = new mongoose.Schema({
-    role: {
-        type: String,
-        default: ROLES.BASIC,
-    },
+    role: { type: String, default: ROLES.BASIC },
     username: {
         type: String,
         index: { unique: true, sparse: true },
@@ -23,10 +20,8 @@ const userSchema = new mongoose.Schema({
         minLength: 3,
         maxLength: 100,
     },
-    password: { 
-        type: String, 
-        // required: true
-    },
+    verified: { type: Boolean, default: false },
+    password: String,
     firstName:  {
         type: String,
         minLength: 1,
@@ -47,10 +42,7 @@ const userSchema = new mongoose.Schema({
         immutable: true,
         default: () => Date.now(),
     },
-    updatedAt: {
-        type: Date,
-        default: () => Date.now(),
-    },
+    updatedAt: { type: Date, default: () => Date.now() },
 });
 
 

@@ -2,11 +2,11 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { generateFromEmail, generateUsername } = require("unique-username-generator");
-
+const { generateUsername2 } = require("../utils/auth");
+ 
 const UserSchema = require("../schemas/user");
 const TokenSchema = require("../schemas/token");
-const { generateAccessToken, generateRefreshToken } = require("../utils/auth/tokens");
+const { generateAccessToken, generateRefreshToken } = require("../utils/auth");
 const { MSG_TYPES } = require('../utils/messageTypes');
 
 // router.use((req, res, next) => {
@@ -50,7 +50,7 @@ router.post("/signup", async (req, res) => {
         }
     } else if (!username) {
         // Generate username if no username given
-        username = generateFromEmail(email, 5);
+        username = generateUsername2();
     }
 
     // Hash password
