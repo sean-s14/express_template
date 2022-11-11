@@ -1,12 +1,13 @@
-require("dotenv").config();
+import * as dotenv from "dotenv";
+dotenv.config();
 const { CLIENT_URL } = process.env;
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { google } = require('googleapis');
+import { google } from "googleapis";
 
-const { updateOrCreateToken, generateUsername2 } = require("../../utils/auth");
-const googleSetup = require("./setup");
-const UserSchema = require("../../schemas/user");
+import { updateOrCreateToken, generateUsername2 } from "../../utils/auth.js";
+import googleSetup from "./setup.js";
+import UserSchema from "../../schemas/user.js";
 
 const cookie_options = { secure: true, httpOnly: true, signed: true };
 
@@ -33,7 +34,7 @@ const getUserInfo = async (tokens) => {
     google.options({auth: oauth2Client}); // SET GOOGLE AUTH TO OAUTH2 CLIENT
 
     // ===== RETRIEVE USER INFO =====
-    const oauth2 = await google.oauth2('v2');
+    const oauth2 = await google.oauth2("v2");
     const { data } = await oauth2.userinfo.get({});
     return data;
 }
@@ -45,7 +46,7 @@ const usersExist = (user) => {
         && (user.length > 0);
 }
 
-router.get('/', (req, res) => {
+router.get("/", (req, res) => {
     const { authorizationUrl } = googleSetup();
     return res.redirect(authorizationUrl);
 });
@@ -60,13 +61,13 @@ router.get('/', (req, res) => {
  * If (google_user === null):
  *   Search for user in mongodb using email from user info
  * If user exists:
- *   Update users associated token or create a token if one doesn't exist
+ *   Update users associated token or create a token if one doesn"t exist
  * If user does not exist:
  *   Create user
  *   Create tokens
  * Set response cookies to access & refresh tokens
  */
-router.get('/callback', async (req, res) => {
+router.get("/callback", async (req, res) => {
     const { code } = req.query;
     const { oauth2Client } = googleSetup();
 
@@ -120,8 +121,8 @@ router.get('/callback', async (req, res) => {
     if (google_user !== null) {
     // ===== UPDATE USER INFO =====
         /* Why only update "verified" property?
-            The reason I'm not updating any other info is because the user may have manually
-            changed this information and doesn't want to update their info with google user 
+            The reason I"m not updating any other info is because the user may have manually
+            changed this information and doesn"t want to update their info with google user 
             info every time they log in using google.
 
             Instead, include a "sync with google" button on the client side to update manually
@@ -174,8 +175,8 @@ router.get("/me", async (req, res) => {
     const refresh_token = cookies["google.rToken"];
     if (!refresh_token) return res.status(401).json({ error: "No refresh token found" });
 
-    const authHeader = req.headers['authorization'];
-    let access_token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers["authorization"];
+    let access_token = authHeader && authHeader.split(" ")[1];
     if (access_token == null) {
         try {
             const tokens = await getTokens(refresh_token);
@@ -198,4 +199,4 @@ router.get("/me", async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

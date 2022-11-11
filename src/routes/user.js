@@ -1,13 +1,13 @@
-const express = require('express');
+import express from "express";
 const router = express.Router();
 
-const UserSchema = require('../schemas/user');
-const { authenticateToken } = require('../middleware/auth');
-const { isAdmin, isOwnerOrAdmin } = require('../utils/permissions/auth');
-const { ERRORS } = require('../utils/errorMessages');
+import UserSchema from "../schemas/user.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { isAdmin, isOwnerOrAdmin } from "../utils/permissions/auth.js";
+import { ERRORS } from "../utils/errorMessages.js";
 
 // ========== GET USER ==========
-router.get('/', authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
     const { user } = req;
     
     try {
@@ -20,10 +20,10 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // ========== UPDATE USER ==========
-router.patch('/', authenticateToken, async (req, res) => {
+router.patch("/", authenticateToken, async (req, res) => {
     const { user, body } = req;
 
-    if (body.hasOwnProperty('role') && !isAdmin(user)) {
+    if (body.hasOwnProperty("role") && !isAdmin(user)) {
         return res.status(403).send({"error": ERRORS.NOT_ADMIN});
     }
 
@@ -42,7 +42,7 @@ router.patch('/', authenticateToken, async (req, res) => {
 });
 
 // ========== DELETE USER ==========
-router.delete('/', authenticateToken, async (req, res) => {
+router.delete("/", authenticateToken, async (req, res) => {
     const { user } = req;
 
     try {
@@ -59,4 +59,4 @@ router.delete('/', authenticateToken, async (req, res) => {
     }
 });
 
-module.exports = router
+export default router;

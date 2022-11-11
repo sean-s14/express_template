@@ -1,25 +1,25 @@
-const express = require('express');
+import express from "express";
 const router = express.Router();
 
-const UserSchema = require('../schemas/user');
-const { authenticateToken } = require('../middleware/auth');
-const { isAdmin, isOwnerOrAdmin } = require('../utils/permissions/auth');
-const { ERRORS } = require('../utils/errorMessages');
+import UserSchema from "../schemas/user.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { isAdmin, isOwnerOrAdmin } from "../utils/permissions/auth.js";
+import { ERRORS } from "../utils/errorMessages.js";
 
 // middleware that is specific to this router
 // router.use((req, res, next) => {
-//     console.log('Request:', req);
+//     console.log("Request:", req);
 //     next()
 // })
 
 // ========== GET ALL USERS ==========
-router.get('/', authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
     const { user } = req;
     const userId = req.params.id;
 
     try {
         if (!isAdmin(user, userId)) {
-            const allUsers = await UserSchema.find(userId, 'username email createdAt');
+            const allUsers = await UserSchema.find(userId, "username email createdAt");
             return res.status(200).json(allUsers);
         } else {
             const allUsers = await UserSchema.find(userId);
@@ -32,13 +32,13 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // ========== GET USER ==========
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get("/:id", authenticateToken, async (req, res) => {
     const { user } = req;
     const userId = req.params.id;
 
     try {
         if (!isOwnerOrAdmin(user, userId)) {
-            const userObj = await UserSchema.findById(userId, 'username email createdAt');
+            const userObj = await UserSchema.findById(userId, "username email createdAt");
             return res.status(200).json(userObj);
         } else {
             const userObj = await UserSchema.findById(userId);
@@ -51,7 +51,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // ========== UPDATE USER ==========
-router.patch('/:id', authenticateToken, async (req, res) => {
+router.patch("/:id", authenticateToken, async (req, res) => {
     const { user, body } = req;
     const userId = req.params.id;
     console.log("Body:", body);
@@ -60,7 +60,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
         return res.status(403).send({"error": ERRORS.NOT_ADMIN_OR_OWNER});
     }
 
-    if (body.hasOwnProperty('role') && !isAdmin(user)) {
+    if (body.hasOwnProperty("role") && !isAdmin(user)) {
         return res.status(403).send({"error": ERRORS.NOT_ADMIN});
     }
 
@@ -78,7 +78,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
 });
 
 // ========== DELETE USER ==========
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete("/:id", authenticateToken, async (req, res) => {
     const { user } = req;
     const userId = req.params.id;
 
@@ -102,4 +102,4 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 });
 
-module.exports = router
+export default router;

@@ -1,6 +1,6 @@
 const ROLES = {
-    BASIC: 'basic',
-    ADMIN: 'admin',
+    BASIC: "basic",
+    ADMIN: "admin",
 }
 
-module.exports = { ROLES };
+export { ROLES };

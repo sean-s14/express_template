@@ -5,4 +5,4 @@ const MSG_TYPES = {
     WARNING: "warning",
 }
 
-module.exports = { MSG_TYPES };
+export { MSG_TYPES };

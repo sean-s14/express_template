@@ -1,13 +1,13 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const { generateUsername2 } = require("../utils/auth");
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { generateUsername2 } from "../utils/auth.js";
  
-const UserSchema = require("../schemas/user");
-const TokenSchema = require("../schemas/token");
-const { generateAccessToken, generateRefreshToken } = require("../utils/auth");
-const { MSG_TYPES } = require('../utils/messageTypes');
+import UserSchema from "../schemas/user.js";
+import TokenSchema from "../schemas/token.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/auth.js";
+import { MSG_TYPES } from "../utils/messageTypes.js";
 
 // router.use((req, res, next) => {
 //     console.log("Request Body:", req?.body);
@@ -173,4 +173,4 @@ router.delete("/logout", async (req, res) => {
     }
 })
 
-module.exports = router
+export default router;

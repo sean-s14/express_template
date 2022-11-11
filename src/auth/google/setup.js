@@ -1,7 +1,8 @@
-require("dotenv").config();
+import * as dotenv from 'dotenv';
+dotenv.config();
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, PROTOCOL, DOMAIN, PORT } = process.env;
 
-const {google} = require('googleapis');
+import { google } from 'googleapis'; 
 
 const googleSetup = () => {
     const oauth2Client = new google.auth.OAuth2(
@@ -25,7 +26,7 @@ const googleSetup = () => {
         include_granted_scopes: true
     });
 
-    return { oauth2Client, authorizationUrl}
+    return { oauth2Client, authorizationUrl }
 }
 
-module.exports = googleSetup;
+export default googleSetup;

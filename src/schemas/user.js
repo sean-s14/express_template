@@ -1,7 +1,5 @@
-// import mongoose from 'mongoose';
-const mongoose = require('mongoose');
-// const { Schema } = mongoose;
-const { ROLES } = require('../utils/permissions/roles');
+import mongoose from "mongoose";
+import { ROLES } from "../utils/permissions/roles.js";
 
 const userSchema = new mongoose.Schema({
     role: { type: String, default: ROLES.BASIC },
@@ -46,6 +44,6 @@ const userSchema = new mongoose.Schema({
 });
 
 
-// const User = mongoose.model('User', userSchema);
-module.exports = mongoose.model('User', userSchema);
+// const User = mongoose.model("User", userSchema);
+export default mongoose.model("User", userSchema);
 

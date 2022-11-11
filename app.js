@@ -1,23 +1,25 @@
-require("dotenv").config();
+"use strict";
+import * as dotenv from "dotenv";
+dotenv.config();
 const env = process.env;
 
-const express = require("express");
+import express from "express";
 const app = express();
 
 // ========== DEVELOPMENT SSL CERTIFICATE ==========
-const fs = require('fs');
-const https = require("https");
-const privateKey  = fs.readFileSync(env.SSL_KEY_FILE, 'utf8');
-const certificate = fs.readFileSync(env.SSL_CRT_FILE, 'utf8');
+import fs from "fs";
+import https from "https";
+const privateKey  = fs.readFileSync(env.SSL_KEY_FILE, "utf8");
+const certificate = fs.readFileSync(env.SSL_CRT_FILE, "utf8");
 const credentials = {key: privateKey, cert: certificate};
 
-const mongoose = require("mongoose");
-mongoose.set('strictQuery', false); // To ensure queries are not stripped of non-existent properties
-const bodyParser = require("body-parser"); // Convert the body of incoming requests into JavaScript objects
-const cors = require("cors"); // Add headers stating that your API accepts requests coming from other origins
-const helmet = require("helmet"); // Secure Express APIs by defining various HTTP headers
-const morgan = require("morgan"); // Adds some logging capabilities
-const cookieParser = require("cookie-parser");
+import mongoose from "mongoose";
+mongoose.set("strictQuery", false); // To ensure queries are not stripped of non-existent properties
+import bodyParser from "body-parser"; // Convert the body of incoming requests into JavaScript objects
+import cors from "cors"; // Add headers stating that your API accepts requests coming from other origins
+import helmet from "helmet"; // Secure Express APIs by defining various HTTP headers
+import morgan from "morgan"; // Adds some logging capabilities
+import cookieParser from "cookie-parser";
 
 // =============== DATABASE CONNECTION ===============
 mongoose.connect(
@@ -50,11 +52,16 @@ app.use(morgan("combined")); // adding morgan to log HTTP requests
 app.use(cookieParser(env.COOKIE_SECRET));
 
 // =============== ROUTES ===============
-app.use("/google", require("./src/auth/google/routes"));
-app.use("/auth", require("./src/routes/auth"));
-app.use("/user", require("./src/routes/user"));
-app.use("/users", require("./src/routes/users"));
-app.use("/items", require("./src/routes/items"));
+import GoogleRoutes from "./src/auth/google/routes.js";
+app.use("/google", GoogleRoutes);
+import AuthRoutes from "./src/routes/auth.js";
+app.use("/auth", AuthRoutes);
+import UserRoutes from "./src/routes/user.js";
+app.use("/user", UserRoutes);
+import UsersRoutes from "./src/routes/users.js";
+app.use("/users", UsersRoutes);
+import ItemsRoutes from "./src/routes/items.js";
+app.use("/items", ItemsRoutes);
 
 
 // =============== LISTENER ===============

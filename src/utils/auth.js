@@ -1,14 +1,14 @@
-const jwt = require('jsonwebtoken');
-const { generateUsername } = require("unique-username-generator");
-const TokenSchema = require("../schemas/token");
-const UserSchema = require("../schemas/user");
+import jwt from "jsonwebtoken";
+import { generateUsername } from "unique-username-generator";
+import TokenSchema from "../schemas/token.js";
+import UserSchema from "../schemas/user.js";
 
 function generateAccessToken(user) {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10m' });
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "10m" });
 }
 
 function generateRefreshToken(user) {
-    return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '2d' });
+    return jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "2d" });
 }
 
 const updateOrCreateToken = async (user, tokens) => {
@@ -33,7 +33,7 @@ const generateUsername2 = async () => {
     return username;
 }
 
-module.exports = {
+export {
     generateAccessToken,
     generateRefreshToken,
     updateOrCreateToken,

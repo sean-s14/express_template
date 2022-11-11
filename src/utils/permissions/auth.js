@@ -1,4 +1,4 @@
-const { ROLES } = require('./roles');
+import { ROLES } from "./roles.js";
 
 function isAdmin(user) {
     return (user.role === ROLES.ADMIN);
@@ -19,7 +19,7 @@ function isOwnerOfObjOrAdmin(user, item) {
 
 // function isAdmin(req, res, next) {
 //     if (req.user.role !== ROLES.ADMIN) {
-//         return res.status(403).send('Only an administrator can perform this action');
+//         return res.status(403).send("Only an administrator can perform this action");
 //     }
 //     next();
 // }
@@ -31,7 +31,7 @@ function isOwnerOfObjOrAdmin(user, item) {
 //     if ( user.role === ROLES.ADMIN || user.id === userId) {
 //         next();
 //     } else {
-//         return res.status(403).send('Only the owner of this account or an administrator can perform this action');
+//         return res.status(403).send("Only the owner of this account or an administrator can perform this action");
 //     }
 // };
 
@@ -40,11 +40,11 @@ function isOwnerOfObjOrAdmin(user, item) {
 //     if ( user.role === ROLES.ADMIN || item.userId === user.id) {
 //         next();
 //     } else {
-//         return res.status(403).send('Only the owner of this object or an administrator can perform this action');
+//         return res.status(403).send("Only the owner of this object or an administrator can perform this action");
 //     }
 // };
 
-module.exports = {
+export {
     isAdmin,
     isOwner,
     isOwnerOrAdmin,

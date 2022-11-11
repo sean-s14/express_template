@@ -1,20 +1,20 @@
-const express = require('express');
+import express from "express";
 const router = express.Router();
 
-const ItemSchema = require('../schemas/item');
-const { authenticateToken } = require('../middleware/auth');
-const { isAdmin, isOwner } = require('../utils/permissions/auth');
-const { ERRORS } = require('../utils/errorMessages');
-const { MSG_TYPES } = require('../utils/messageTypes');
+import ItemSchema from "../schemas/item.js";
+import { authenticateToken } from "../middleware/auth.js";
+import { isAdmin, isOwner } from "../utils/permissions/auth.js";
+import { ERRORS } from "../utils/errorMessages.js";
+import { MSG_TYPES } from "../utils/messageTypes.js";
 
 // middleware that is specific to this router
 // router.use((req, res, next) => {
-//     console.log('Request:', req);
+//     console.log("Request:", req);
 //     next()
 // })
 
 // =============== CREATE ITEM ===============
-router.post('/', authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, async (req, res) => {
     const { user, body } = req;
 
     try {
@@ -30,7 +30,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // =============== GET ALL ITEMS ===============
-router.get('/', authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
     const { user } = req;
 
     try {
@@ -43,7 +43,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // =============== GET ITEM ===============
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get("/:id", authenticateToken, async (req, res) => {
     const { user } = req;
     const { id } = req.params;
 
@@ -68,7 +68,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // =============== UPDATE ITEM ===============
-router.patch('/:id', authenticateToken, async (req, res) => {
+router.patch("/:id", authenticateToken, async (req, res) => {
     const { user, body } = req;
     const { id } = req.params;
 
@@ -98,7 +98,7 @@ router.patch('/:id', authenticateToken, async (req, res) => {
 });
 
 // =============== DELETE ITEM ===============
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete("/:id", authenticateToken, async (req, res) => {
     const { user } = req;
     const { id } = req.params;
 
@@ -123,4 +123,4 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 });
 
-module.exports = router
+export default router;
