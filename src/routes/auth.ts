@@ -1,13 +1,17 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+const env: any = process.env;
+
 import express from "express";
 const router = express.Router();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { generateUsername2 } from "../utils/auth.js";
+import { generateUsername2 } from "../utils/auth";
  
-import UserSchema from "../schemas/user.js";
-import TokenSchema from "../schemas/token.js";
-import { generateAccessToken, generateRefreshToken } from "../utils/auth.js";
-import { MSG_TYPES } from "../utils/messageTypes.js";
+import { IUser, User as UserSchema } from "../schemas/user";
+import { Token as TokenSchema } from "../schemas/token";
+import { generateAccessToken, generateRefreshToken } from "../utils/auth";
+import { MSG_TYPES } from "../utils/messageTypes";
 
 // router.use((req, res, next) => {
 //     console.log("Request Body:", req?.body);
@@ -65,7 +69,7 @@ router.post("/signup", async (req, res) => {
             password: hash,
         })
         await user.save();
-    } catch(e) {
+    } catch(e: any) {
         console.log(e);
         return res.status(500).json(e.errors)
     }
@@ -74,11 +78,11 @@ router.post("/signup", async (req, res) => {
 })
 
 // =============== LOGIN ===============
-router.post("/login", async (req, res) => {
+router.post("/login", async (req: any, res) => {
     // TODO: Search through database for user with specified username/email and then match password 
     const { username, password } = req.body;
 
-    const user = await UserSchema.findOne({ username: username });
+    const user: any = await UserSchema.findOne({ username: username });
     if (!user) return res.status(404).json("User with specified username could not be found");
 
     const isValid = await bcrypt.compare(password, user.password);
@@ -106,7 +110,7 @@ router.post("/login", async (req, res) => {
                 { token: refreshToken },
             )
         }
-    } catch(e) {
+    } catch(e: any) {
         console.log(e);
         return res.status(500).json(e.errors);
         // return res.status(400).json("Failed to create refresh token");
@@ -130,7 +134,7 @@ router.post("/refresh", async (req, res) => {
     if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresh token in database" });
     // if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
 
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
+    jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET, async (err: any, user: any) => {
         if (err) return res.status(403).json({[MSG_TYPES.ERROR]:"Unable to verify refresh token"});
         const accessToken = generateAccessToken({ username: user.username });
         // Replace old refresh token
@@ -144,7 +148,7 @@ router.post("/refresh", async (req, res) => {
                 { token: newRefreshToken },
             )
             // console.log("Token:", token);
-        } catch(e) {
+        } catch(e: any) {
             console.log(e);
             return res.status(500).json(e.errors);
         }
@@ -167,7 +171,7 @@ router.delete("/logout", async (req, res) => {
             return res.status(400).json({ [MSG_TYPES.ERROR]: "Unable to log out" })
         }
         return res.status(204);
-    } catch(e) {
+    } catch(e: any) {
         console.log(e);
         return res.status(500).json(e.errors);
     }

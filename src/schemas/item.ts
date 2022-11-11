@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+export interface I_Item {
+    _id: mongoose.Types.ObjectId,
+    title: string,
+    userId: mongoose.Types.ObjectId,
+    createdAt: Date,
+    updatedAt: Date,
+}
+
 const itemSchema = new mongoose.Schema({
     title: {
         type: String,
@@ -8,7 +16,7 @@ const itemSchema = new mongoose.Schema({
         required: true
     },
     userId: { 
-        type: mongoose.Schema.ObjectId,
+        type: mongoose.Types.ObjectId,
         required: true
     },
     createdAt: {
@@ -23,5 +31,5 @@ const itemSchema = new mongoose.Schema({
 });
 
 
-export default mongoose.model("Item", itemSchema);
+export const Item = mongoose.model("Item", itemSchema);
 

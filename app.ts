@@ -1,7 +1,7 @@
 "use strict";
 import * as dotenv from "dotenv";
 dotenv.config();
-const env = process.env;
+const env: any = process.env;
 
 import express from "express";
 const app = express();
@@ -34,7 +34,7 @@ mongoose.connect(
 // =============== MIDDLEWARE ===============
 let whitelist = [env.CORS_WHITELIST]
 let corsOptions = {
-    origin: function (origin, callback) {
+    origin: function (origin: any, callback: Function) {
         //   console.log("Origin:", origin);
         if (whitelist.indexOf(origin) !== -1) {
             callback(null, true)
@@ -52,15 +52,15 @@ app.use(morgan("combined")); // adding morgan to log HTTP requests
 app.use(cookieParser(env.COOKIE_SECRET));
 
 // =============== ROUTES ===============
-import GoogleRoutes from "./src/auth/google/routes.js";
+import GoogleRoutes from "./src/auth/google/routes";
 app.use("/google", GoogleRoutes);
-import AuthRoutes from "./src/routes/auth.js";
+import AuthRoutes from "./src/routes/auth";
 app.use("/auth", AuthRoutes);
-import UserRoutes from "./src/routes/user.js";
+import UserRoutes from "./src/routes/user";
 app.use("/user", UserRoutes);
-import UsersRoutes from "./src/routes/users.js";
+import UsersRoutes from "./src/routes/users";
 app.use("/users", UsersRoutes);
-import ItemsRoutes from "./src/routes/items.js";
+import ItemsRoutes from "./src/routes/items";
 app.use("/items", ItemsRoutes);
 
 

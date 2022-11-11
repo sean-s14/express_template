@@ -1,7 +1,26 @@
 import mongoose from "mongoose";
-import { ROLES } from "../utils/permissions/roles.js";
+import { ROLES } from "../utils/permissions/roles";
 
-const userSchema = new mongoose.Schema({
+export interface IUser {
+    _id: mongoose.Types.ObjectId,
+    role?: string,
+    username?: { type: string, index: object, minLength: number, maxLength: number},
+    email?: { type: string, index: object, lowercase: boolean, minLength: number, maxLength: number},
+    verified?: boolean,
+    password?: string,
+    firstName?: string,
+    lastName?: string,
+    birth_date?: Date,
+    photo?: string,
+    googleId?: string,
+    githubId?: string,
+    facebookId?: string,
+    createdAt: Date
+    updatedAt: Date,
+}
+
+
+const userSchema = new mongoose.Schema<IUser>({
     role: { type: String, default: ROLES.BASIC },
     username: {
         type: String,
@@ -44,6 +63,4 @@ const userSchema = new mongoose.Schema({
 });
 
 
-// const User = mongoose.model("User", userSchema);
-export default mongoose.model("User", userSchema);
-
+export const User = mongoose.model<IUser>("User", userSchema);

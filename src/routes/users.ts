@@ -1,38 +1,38 @@
 import express from "express";
 const router = express.Router();
 
-import UserSchema from "../schemas/user.js";
-import { authenticateToken } from "../middleware/auth.js";
-import { isAdmin, isOwnerOrAdmin } from "../utils/permissions/auth.js";
-import { ERRORS } from "../utils/errorMessages.js";
+import { User as UserSchema } from "../schemas/user";
+import { authenticateToken } from "../middleware/auth";
+import { isAdmin, isOwnerOrAdmin } from "../utils/permissions/auth";
+import { ERRORS } from "../utils/errorMessages";
 
 // middleware that is specific to this router
-// router.use((req, res, next) => {
+// router.use((req: any, res, next) => {
 //     console.log("Request:", req);
 //     next()
 // })
 
 // ========== GET ALL USERS ==========
-router.get("/", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req: any, res) => {
     const { user } = req;
     const userId = req.params.id;
 
     try {
-        if (!isAdmin(user, userId)) {
-            const allUsers = await UserSchema.find(userId, "username email createdAt");
-            return res.status(200).json(allUsers);
-        } else {
+        if (isAdmin(user)) {
             const allUsers = await UserSchema.find(userId);
             return res.status(200).json(allUsers);
+        } else {
+            const allUsers = await UserSchema.find(userId, "username email createdAt");
+            return res.status(200).json(allUsers);
         }
-    } catch(e) {
+    } catch(e: any) {
         console.log(e)
         return res.status(500).json(e.errors);
     }
 });
 
 // ========== GET USER ==========
-router.get("/:id", authenticateToken, async (req, res) => {
+router.get("/:id", authenticateToken, async (req: any, res) => {
     const { user } = req;
     const userId = req.params.id;
 
@@ -44,14 +44,14 @@ router.get("/:id", authenticateToken, async (req, res) => {
             const userObj = await UserSchema.findById(userId);
             return res.status(200).json(userObj);
         }
-    } catch(e) {
+    } catch(e: any) {
         console.log(e)
         return res.status(500).json(e.errors);
     }
 });
 
 // ========== UPDATE USER ==========
-router.patch("/:id", authenticateToken, async (req, res) => {
+router.patch("/:id", authenticateToken, async (req: any, res) => {
     const { user, body } = req;
     const userId = req.params.id;
     console.log("Body:", body);
@@ -71,14 +71,14 @@ router.patch("/:id", authenticateToken, async (req, res) => {
             { new: true },
         );
         return res.status(200).json(userObj);
-    } catch(e) {
+    } catch(e: any) {
         console.log(e)
         return res.status(500).json(e.errors);
     }
 });
 
 // ========== DELETE USER ==========
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/:id", authenticateToken, async (req: any, res) => {
     const { user } = req;
     const userId = req.params.id;
 
@@ -96,7 +96,7 @@ router.delete("/:id", authenticateToken, async (req, res) => {
             );
         }
         return res.status(200).json({ "msg": "Your account has successfully been deleted" });
-    } catch(e) {
+    } catch(e: any) {
         console.log(e)
         return res.status(500).json(e.errors);
     }

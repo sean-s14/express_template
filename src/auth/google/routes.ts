@@ -5,16 +5,16 @@ import express from "express";
 const router = express.Router();
 import { google } from "googleapis";
 
-import { updateOrCreateToken, generateUsername2 } from "../../utils/auth.js";
-import googleSetup from "./setup.js";
-import UserSchema from "../../schemas/user.js";
+import { updateOrCreateToken, generateUsername2 } from "../../utils/auth";
+import googleSetup from "./setup";
+import { User as UserSchema } from "../../schemas/user";
 
 const cookie_options = { secure: true, httpOnly: true, signed: true };
 
-const getTokens = async (refresh_token) => {{
+const getTokens = async (refresh_token: string) => {{
     const { oauth2Client } = googleSetup();
     oauth2Client.setCredentials({refresh_token: refresh_token});
-    oauth2Client.getAccessToken((err, token) => {
+    oauth2Client.getAccessToken((err: any, token) => {
         if (err) throw new Error("Unable to retrieve new access token");
         if (token) return {access_token: token, refresh_token: refresh_token};
     });
@@ -28,7 +28,7 @@ const getTokens = async (refresh_token) => {{
  *   access_token: ###
  * }
  */
-const getUserInfo = async (tokens) => {
+const getUserInfo = async (tokens: any) => {
     const { oauth2Client } = googleSetup();
     oauth2Client.setCredentials(tokens);  // SET THE CREDENTIALS TO TOKENS
     google.options({auth: oauth2Client}); // SET GOOGLE AUTH TO OAUTH2 CLIENT
@@ -39,14 +39,14 @@ const getUserInfo = async (tokens) => {
     return data;
 }
 
-const usersExist = (user) => {
+const usersExist = (user: any) => {
     return !!user 
         && (user !== null) 
         && Array.isArray(user) 
         && (user.length > 0);
 }
 
-router.get("/", (req, res) => {
+router.get("/", (req: any, res) => {
     const { authorizationUrl } = googleSetup();
     return res.redirect(authorizationUrl);
 });
@@ -67,21 +67,21 @@ router.get("/", (req, res) => {
  *   Create tokens
  * Set response cookies to access & refresh tokens
  */
-router.get("/callback", async (req, res) => {
+router.get("/callback", async (req: any, res: any) => {
     const { code } = req.query;
     const { oauth2Client } = googleSetup();
 
     // ===== GET TOKENS FROM CODE =====
-    const { tokens } = await oauth2Client.getToken(code);
+    const { tokens }: any = await oauth2Client.getToken(code);
     // console.log("Tokens:", tokens);
     
     // ===== GET USER INFO =====
-    let userInfo;
+    let userInfo: any;
     try {
         userInfo = await getUserInfo(tokens);
         // console.log("User Info :", userInfo);
         if (!userInfo) return res.redirect(500, CLIENT_URL);
-    } catch(e) {
+    } catch(e: any) {
         console.log(e);
         return res.redirect(500, CLIENT_URL);
     }
@@ -97,11 +97,11 @@ router.get("/callback", async (req, res) => {
     }
 
     // ===== GET USER FROM DB USING GOOGLE ID =====
-    const google_user = await UserSchema.findOne().where({googleId: userInfo.id});
+    const google_user: any = await UserSchema.findOne({ googleId: userInfo.id });
     // console.log("Google User:", google_user);
 
     // ===== GET USER FROM DB USING EMAIL =====
-    const basic_user = (google_user === null) && await UserSchema.findOne().where({email: userInfo.email});
+    const basic_user: any = (google_user === null) && await UserSchema.findOne({ email: userInfo.email });
     // console.log("Basic User:", basic_user);
 
     // ===== USER INFO TO CREATE OR UPDATE USER WITH =====
@@ -127,7 +127,7 @@ router.get("/callback", async (req, res) => {
 
             Instead, include a "sync with google" button on the client side to update manually
         */
-        google_user.updateOne({verified: userInfo.verified_email}, async (err, doc) => {
+        google_user.updateOne({verified: userInfo.verified_email}, async (err: any, doc: any) => {
             if (err) {
                 console.error(err);
                 return res.redirect(500, CLIENT_URL);
@@ -139,7 +139,7 @@ router.get("/callback", async (req, res) => {
     // ===== UPDATE BASIC USER WITH GOOGLE ID =====
         basic_user.password = undefined;
         basic_user.save()
-        basic_user.updateOne(update_user_info, async (err, doc) => {
+        basic_user.updateOne(update_user_info, async (err: any, doc: any) => {
             if (err) {
                 console.error(err);
                 return res.redirect(500, CLIENT_URL);
@@ -161,7 +161,7 @@ router.get("/callback", async (req, res) => {
             await newUser.save();
             const newTokens = await updateOrCreateToken(newUser, tokens);
             // console.log("New User Tokens:", newTokens);
-        } catch(e) {
+        } catch(e: any) {
             console.error(e);
             return res.redirect(500, CLIENT_URL);
         }
@@ -170,7 +170,7 @@ router.get("/callback", async (req, res) => {
     return res.redirect(CLIENT_URL);
 });
 
-router.get("/me", async (req, res) => {
+router.get("/me", async (req: any, res) => {
     const { signedCookies: cookies } = req;
     const refresh_token = cookies["google.rToken"];
     if (!refresh_token) return res.status(401).json({ error: "No refresh token found" });
@@ -182,7 +182,7 @@ router.get("/me", async (req, res) => {
             const tokens = await getTokens(refresh_token);
             const userInfo = await getUserInfo(tokens);
             return res.status(200).json(userInfo);
-        } catch(e) {
+        } catch(e: any) {
             console.error(e);
             return res.status(500).json({ error: e.message });
         }
@@ -192,7 +192,7 @@ router.get("/me", async (req, res) => {
             const userInfo = await getUserInfo(tokens);
             if (!userInfo) return res.status(500).json({ error: "Unable to retrieve user info" })
             return res.status(200).json({ user_info: userInfo });
-        } catch(e) {
+        } catch(e: any) {
             console.error(e);
             return res.status(500).json({ error: e.message });
         }
