@@ -5,24 +5,24 @@ import { User as UserSchema } from "../schemas/user";
 import { authenticateToken } from "../middleware/auth";
 import { isAdmin, isOwnerOrAdmin } from "../utils/permissions/auth";
 import { ERRORS } from "../utils/errorMessages";
+import { Request } from "./types";
 
 // middleware that is specific to this router
-// router.use((req: any, res, next) => {
+// router.use((req: express.Request, res, next) => {
 //     console.log("Request:", req);
 //     next()
 // })
 
 // ========== GET ALL USERS ==========
-router.get("/", authenticateToken, async (req: any, res) => {
+router.get("/", authenticateToken, async (req: Request, res: express.Response) => {
     const { user } = req;
-    const userId = req.params.id;
 
     try {
         if (isAdmin(user)) {
-            const allUsers = await UserSchema.find(userId);
+            const allUsers = await UserSchema.find();
             return res.status(200).json(allUsers);
         } else {
-            const allUsers = await UserSchema.find(userId, "username email createdAt");
+            const allUsers = await UserSchema.find({}, "username email createdAt");
             return res.status(200).json(allUsers);
         }
     } catch(e: any) {
@@ -32,16 +32,16 @@ router.get("/", authenticateToken, async (req: any, res) => {
 });
 
 // ========== GET USER ==========
-router.get("/:id", authenticateToken, async (req: any, res) => {
+router.get("/:id", authenticateToken, async (req: Request, res: express.Response) => {
     const { user } = req;
     const userId = req.params.id;
 
     try {
-        if (!isOwnerOrAdmin(user, userId)) {
-            const userObj = await UserSchema.findById(userId, "username email createdAt");
+        if (isOwnerOrAdmin(user, userId)) {
+            const userObj = await UserSchema.findById(userId);
             return res.status(200).json(userObj);
         } else {
-            const userObj = await UserSchema.findById(userId);
+            const userObj = await UserSchema.findById(userId, "username email createdAt");
             return res.status(200).json(userObj);
         }
     } catch(e: any) {
@@ -51,7 +51,7 @@ router.get("/:id", authenticateToken, async (req: any, res) => {
 });
 
 // ========== UPDATE USER ==========
-router.patch("/:id", authenticateToken, async (req: any, res) => {
+router.patch("/:id", authenticateToken, async (req: Request, res: express.Response) => {
     const { user, body } = req;
     const userId = req.params.id;
     console.log("Body:", body);
@@ -66,7 +66,7 @@ router.patch("/:id", authenticateToken, async (req: any, res) => {
 
     try {
         const userObj = await UserSchema.findOneAndUpdate(
-            { username: user.username },
+            { username: user?.username },
             body,
             { new: true },
         );
@@ -78,7 +78,7 @@ router.patch("/:id", authenticateToken, async (req: any, res) => {
 });
 
 // ========== DELETE USER ==========
-router.delete("/:id", authenticateToken, async (req: any, res) => {
+router.delete("/:id", authenticateToken, async (req: Request, res: express.Response) => {
     const { user } = req;
     const userId = req.params.id;
 
@@ -89,10 +89,10 @@ router.delete("/:id", authenticateToken, async (req: any, res) => {
     }
 
     try {
-        const userObj = await UserSchema.findOneAndDelete({ username: user.username });
+        const userObj = await UserSchema.findOneAndDelete({ username: user?.username });
         if (userObj === null) {
             return res.status(400).json(
-                { "msg": `The account with username ${user.username} does not exist` }
+                { "msg": `The account with username ${user?.username} does not exist` }
             );
         }
         return res.status(200).json({ "msg": "Your account has successfully been deleted" });

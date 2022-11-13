@@ -11,31 +11,31 @@ interface IItem {
     userId: mongoose.Types.ObjectId,
 }
 
-function isAdmin(user: IUser) {
-    return (user.role === ROLES.ADMIN);
+function isAdmin(user: IUser | undefined) {
+    return (user?.role === ROLES.ADMIN);
 };
 
-function isOwner(user: IUser, item: IItem) {
-    return (user.id === item.userId.toString());
+function isOwner(user: IUser | undefined, item: IItem) {
+    return (user?.id === item?.userId?.toString());
 };
 
 // This is for users only
-function isOwnerOrAdmin(user: IUser, userId: string) {
-    return (user.role === ROLES.ADMIN || user.id === userId);
+function isOwnerOrAdmin(user: IUser | undefined, userId: string) {
+    return (user?.role === ROLES.ADMIN || user?.id === userId);
 };
 
-function isOwnerOfObjOrAdmin(user: IUser, item: IItem) {
-    return ( user.role === ROLES.ADMIN || item.userId.toString() === user.id);
+function isOwnerOfObjOrAdmin(user: IUser | undefined, item: IItem) {
+    return ( user?.role === ROLES.ADMIN || item?.userId?.toString() === user?.id);
 };
 
-// function isAdmin(req, res, next) {
+// function isAdmin(req: express.Request, res, next) {
 //     if (req.user.role !== ROLES.ADMIN) {
 //         return res.status(403).send("Only an administrator can perform this action");
 //     }
 //     next();
 // }
 
-// function isOwnerOrAdmin(req, res, next) {
+// function isOwnerOrAdmin(req: express.Request, res, next) {
 //     const { user } = req;
 //     const userId = req.params.id;
 //     // console.log("Request:", req);

@@ -5,13 +5,14 @@ import { User as UserSchema } from "../schemas/user";
 import { authenticateToken } from "../middleware/auth";
 import { isAdmin } from "../utils/permissions/auth";
 import { ERRORS } from "../utils/errorMessages";
+import { Request } from "./types";
 
 // ========== GET USER ==========
-router.get("/", authenticateToken, async (req: any, res) => {
+router.get("/", authenticateToken, async (req: Request, res: express.Response) => {
     const { user } = req;
     
     try {
-        const userObj = await UserSchema.findOne({ username: user.username });
+        const userObj = await UserSchema.findOne({ username: user?.username });
         return res.status(200).json(userObj);
     } catch(e: any) {
         console.log(e)
@@ -20,7 +21,7 @@ router.get("/", authenticateToken, async (req: any, res) => {
 });
 
 // ========== UPDATE USER ==========
-router.patch("/", authenticateToken, async (req: any, res) => {
+router.patch("/", authenticateToken, async (req: Request, res: express.Response) => {
     const { user, body } = req;
 
     if (body.hasOwnProperty("role") && !isAdmin(user)) {
@@ -29,7 +30,7 @@ router.patch("/", authenticateToken, async (req: any, res) => {
 
     try {
         const userObj = await UserSchema.findOneAndUpdate(
-            { username: user.username },
+            { username: user?.username },
             body,
             { new: true },
         );
@@ -42,14 +43,14 @@ router.patch("/", authenticateToken, async (req: any, res) => {
 });
 
 // ========== DELETE USER ==========
-router.delete("/", authenticateToken, async (req: any, res: any) => {
+router.delete("/", authenticateToken, async (req: Request, res: any) => {
     const { user } = req;
 
     try {
-        const userObj = await UserSchema.findOneAndDelete({ username: user.username });
+        const userObj = await UserSchema.findOneAndDelete({ username: user?.username });
         if (userObj === null) {
             return res.status(400).json(
-                { "msg": `The account with username ${user.username} does not exist` }
+                { "msg": `The account with username ${user?.username} does not exist` }
             );
         }
         return res.status(200).json({ "msg": "Your account has successfully been deleted" });

@@ -13,13 +13,13 @@ import { Token as TokenSchema } from "../schemas/token";
 import { generateAccessToken, generateRefreshToken } from "../utils/auth";
 import { MSG_TYPES } from "../utils/messageTypes";
 
-// router.use((req, res, next) => {
+// router.use((req: express.Request, res: express.Response, next: Function) => {
 //     console.log("Request Body:", req?.body);
 //     next()
 // })
 
 // =============== SIGNUP ===============
-router.post("/signup", async (req, res) => {
+router.post("/signup", async (req: express.Request, res: express.Response) => {
     const { email, password, password2 } = req.body;
     let { username } = req.body;
 
@@ -78,28 +78,32 @@ router.post("/signup", async (req, res) => {
 })
 
 // =============== LOGIN ===============
-router.post("/login", async (req: any, res) => {
+router.post("/login", async (req: express.Request, res: express.Response) => {
     // TODO: Search through database for user with specified username/email and then match password 
     const { username, password } = req.body;
 
-    const user: any = await UserSchema.findOne({ username: username });
+    const user: IUser | null = await UserSchema.findOne({ username: username });
     if (!user) return res.status(404).json("User with specified username could not be found");
 
-    const isValid = await bcrypt.compare(password, user.password);
+    const isValid = await bcrypt.compare(password, user.password || '');
     if (!isValid) return res.status(403).json("Password entered is invalid");
 
     const user2 = { username: username, id: user._id, role: user.role };
     const accessToken = generateAccessToken(user2);
+    if (accessToken === null) return res.json({ err: "Could not generate access token due to missing access token secret" })
     const refreshToken = generateRefreshToken(user2);
+    if (refreshToken === null) return res.json({ err: "Could not generate refresh token due to missing refresh token secret" })
 
     try {
         // console.log("Refresh Token:", refreshToken);
-        // console.log("User ID:", user._id);
+        console.log("User ID:", user._id);
         const tokenInDB = await TokenSchema.findOne({ user: user._id })
         // console.log("Token in DB:", tokenInDB);
+        console.log("Token in DB (Bool):", !!tokenInDB);
         if (!tokenInDB) {
             const token = new TokenSchema({
-                token: refreshToken,
+                refresh_token: refreshToken,
+                access_token: accessToken,
                 user: user._id,
             })
             await token.save();
@@ -107,7 +111,7 @@ router.post("/login", async (req: any, res) => {
             // console.log("Updating schema...")
             const token = await TokenSchema.findOneAndUpdate(
                 { user: user._id },
-                { token: refreshToken },
+                { refresh_token: refreshToken, access_token: accessToken },
             )
         }
     } catch(e: any) {
@@ -124,13 +128,13 @@ router.post("/login", async (req: any, res) => {
 });
 
 // =============== REFRESH TOKEN ===============
-router.post("/refresh", async (req, res) => {
+router.post("/refresh", async (req: express.Request, res: express.Response) => {
     const { refreshToken } = req.signedCookies;
     // console.log("Signed Cookie:", refreshToken);
 
     if (refreshToken == null) return res.status(401).json({[MSG_TYPES.ERROR]:"No refresh token found in cookie"});
 
-    const refreshTokenInDB = await TokenSchema.findOne({ token: refreshToken });
+    const refreshTokenInDB = await TokenSchema.findOne({ refresh_token: refreshToken });
     if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresh token in database" });
     // if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
 
@@ -144,8 +148,8 @@ router.post("/refresh", async (req, res) => {
         // refreshTokens.push(refreshToken);
         try {
             const token = await TokenSchema.findOneAndUpdate(
-                { token: refreshToken},
-                { token: newRefreshToken },
+                { refresh_token: refreshToken },
+                { refresh_token: newRefreshToken, access_token: accessToken },
             )
             // console.log("Token:", token);
         } catch(e: any) {
@@ -160,13 +164,13 @@ router.post("/refresh", async (req, res) => {
 })
 
 // =============== LOGOUT ===============
-router.delete("/logout", async (req, res) => {
+router.delete("/logout", async (req: express.Request, res: express.Response) => {
     const { refreshToken } = req.signedCookies;
     if (refreshToken) {
         res.clearCookie("refreshToken", { httpOnly: true, signed: true });
     }
     try {
-        const token = await TokenSchema.findOneAndDelete({ token: refreshToken });
+        const token = await TokenSchema.findOneAndDelete({ refresh_token: refreshToken });
         if (token === null) {
             return res.status(400).json({ [MSG_TYPES.ERROR]: "Unable to log out" })
         }

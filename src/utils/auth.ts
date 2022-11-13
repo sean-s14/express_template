@@ -1,17 +1,27 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-const env: any = process.env;
+const env: NodeJS.ProcessEnv = process.env;
 
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { generateUsername } from "unique-username-generator";
+
 import { IToken, Token as TokenSchema } from "../schemas/token";
 import { User as UserSchema } from "../schemas/user";
 
-function generateAccessToken(user: object) {
-    return jwt.sign(user, env.ACCESS_TOKEN_SECRET, { expiresIn: "10m" });
+interface IUser {
+    username: string,
+    id?: mongoose.Types.ObjectId,
+    role?: string,
 }
 
-function generateRefreshToken(user: object) {
+function generateAccessToken(user: IUser): string | null {
+    if (env?.ACCESS_TOKEN_SECRET === undefined) return null;
+    return jwt.sign(user, env?.ACCESS_TOKEN_SECRET, { expiresIn: "10m" });
+}
+
+function generateRefreshToken(user: IUser) {
+    if (env?.REFRESH_TOKEN_SECRET === undefined) return null;
     return jwt.sign(user, env.REFRESH_TOKEN_SECRET, { expiresIn: "2d" });
 }
 

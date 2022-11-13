@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 const { CLIENT_URL } = process.env;
+
 import express from "express";
 const router = express.Router();
 import { google } from "googleapis";
@@ -11,13 +12,27 @@ import { User as UserSchema } from "../../schemas/user";
 
 const cookie_options = { secure: true, httpOnly: true, signed: true };
 
-const getTokens = async (refresh_token: string) => {{
+
+interface ITokens {
+    refresh_token: string,
+    access_token: string | null,
+}
+
+async function getTokens(refresh_token: string): Promise<void | ITokens> {{
     const { oauth2Client } = googleSetup();
     oauth2Client.setCredentials({refresh_token: refresh_token});
     oauth2Client.getAccessToken((err: any, token) => {
         if (err) throw new Error("Unable to retrieve new access token");
         if (token) return {access_token: token, refresh_token: refresh_token};
     });
+    // try {
+    //     var token = await oauth2Client.getAccessToken();
+    //     return {access_token: token, refresh_token: refresh_token};
+    // } catch(e: any) {
+    //     console.log(e);
+    //     throw new Error("Unable to retrieve new access token");
+    // }
+
 }};
 
 /**
@@ -28,7 +43,7 @@ const getTokens = async (refresh_token: string) => {{
  *   access_token: ###
  * }
  */
-const getUserInfo = async (tokens: any) => {
+async function getUserInfo(tokens: ITokens) {
     const { oauth2Client } = googleSetup();
     oauth2Client.setCredentials(tokens);  // SET THE CREDENTIALS TO TOKENS
     google.options({auth: oauth2Client}); // SET GOOGLE AUTH TO OAUTH2 CLIENT
@@ -39,14 +54,14 @@ const getUserInfo = async (tokens: any) => {
     return data;
 }
 
-const usersExist = (user: any) => {
+function usersExist(user: any) {
     return !!user 
         && (user !== null) 
         && Array.isArray(user) 
         && (user.length > 0);
 }
 
-router.get("/", (req: any, res) => {
+router.get("/", (req: express.Request, res: express.Response) => {
     const { authorizationUrl } = googleSetup();
     return res.redirect(authorizationUrl);
 });
@@ -67,7 +82,7 @@ router.get("/", (req: any, res) => {
  *   Create tokens
  * Set response cookies to access & refresh tokens
  */
-router.get("/callback", async (req: any, res: any) => {
+router.get("/callback", async (req: any, res: express.Response) => {
     const { code } = req.query;
     const { oauth2Client } = googleSetup();
 
@@ -80,10 +95,14 @@ router.get("/callback", async (req: any, res: any) => {
     try {
         userInfo = await getUserInfo(tokens);
         // console.log("User Info :", userInfo);
-        if (!userInfo) return res.redirect(500, CLIENT_URL);
+        if (!userInfo) {
+            if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+            else return res.json({ err: 'Could not redirect' })
+        }
     } catch(e: any) {
         console.log(e);
-        return res.redirect(500, CLIENT_URL);
+        if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+        else return res.json({ err: 'Could not redirect' })
     }
 
     // ===== RETURN ERROR PROMPTING EMAIL VERIFICATION =====
@@ -93,7 +112,8 @@ router.get("/callback", async (req: any, res: any) => {
             "You must verify your google account before logging in with google",
             { secure: true, httpOnly: false, signed: true }
         )
-        return res.redirect(401, CLIENT_URL);
+        if (CLIENT_URL !== undefined) return res.redirect(401, CLIENT_URL);
+        else return res.json({ err: 'Could not redirect' })
     }
 
     // ===== GET USER FROM DB USING GOOGLE ID =====
@@ -130,7 +150,8 @@ router.get("/callback", async (req: any, res: any) => {
         google_user.updateOne({verified: userInfo.verified_email}, async (err: any, doc: any) => {
             if (err) {
                 console.error(err);
-                return res.redirect(500, CLIENT_URL);
+                if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+                else return res.json({ err: 'Could not redirect' })
             }
             const newTokens = await updateOrCreateToken(google_user, tokens);
             console.log("Google Callback:", newTokens)
@@ -142,7 +163,8 @@ router.get("/callback", async (req: any, res: any) => {
         basic_user.updateOne(update_user_info, async (err: any, doc: any) => {
             if (err) {
                 console.error(err);
-                return res.redirect(500, CLIENT_URL);
+                if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+                else return res.json({ err: 'Could not redirect' })
             }
             const newTokens = await updateOrCreateToken(basic_user, tokens);
             console.log("Basic Callback:", newTokens)
@@ -163,14 +185,16 @@ router.get("/callback", async (req: any, res: any) => {
             // console.log("New User Tokens:", newTokens);
         } catch(e: any) {
             console.error(e);
-            return res.redirect(500, CLIENT_URL);
+            if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+            else return res.json({ err: 'Could not redirect' })
         }
     }
 
-    return res.redirect(CLIENT_URL);
+    if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+    else return res.json({ err: 'Could not redirect' })
 });
 
-router.get("/me", async (req: any, res) => {
+router.get("/me", async (req: express.Request, res: express.Response) => {
     const { signedCookies: cookies } = req;
     const refresh_token = cookies["google.rToken"];
     if (!refresh_token) return res.status(401).json({ error: "No refresh token found" });
@@ -179,7 +203,7 @@ router.get("/me", async (req: any, res) => {
     let access_token = authHeader && authHeader.split(" ")[1];
     if (access_token == null) {
         try {
-            const tokens = await getTokens(refresh_token);
+            const tokens: any = await getTokens(refresh_token);
             const userInfo = await getUserInfo(tokens);
             return res.status(200).json(userInfo);
         } catch(e: any) {

@@ -14,7 +14,7 @@ import { MSG_TYPES } from "../utils/messageTypes";
 // })
 
 // =============== CREATE ITEM ===============
-router.post("/", authenticateToken, async (req: any, res) => {
+router.post("/", authenticateToken, async (req: any, res: express.Response) => {
     const { user, body } = req;
 
     try {
@@ -30,7 +30,7 @@ router.post("/", authenticateToken, async (req: any, res) => {
 });
 
 // =============== GET ALL ITEMS ===============
-router.get("/", authenticateToken, async (req: any, res) => {
+router.get("/", authenticateToken, async (req: any, res: express.Response) => {
     const { user } = req;
 
     try {
@@ -43,7 +43,7 @@ router.get("/", authenticateToken, async (req: any, res) => {
 });
 
 // =============== GET ITEM ===============
-router.get("/:id", authenticateToken, async (req: any, res) => {
+router.get("/:id", authenticateToken, async (req: any, res: express.Response) => {
     const { user } = req;
     const { id } = req.params;
 
@@ -68,7 +68,7 @@ router.get("/:id", authenticateToken, async (req: any, res) => {
 });
 
 // =============== UPDATE ITEM ===============
-router.patch("/:id", authenticateToken, async (req: any, res) => {
+router.patch("/:id", authenticateToken, async (req: any, res: express.Response) => {
     const { user, body } = req;
     const { id } = req.params;
 
@@ -98,7 +98,7 @@ router.patch("/:id", authenticateToken, async (req: any, res) => {
 });
 
 // =============== DELETE ITEM ===============
-router.delete("/:id", authenticateToken, async (req: any, res) => {
+router.delete("/:id", authenticateToken, async (req: any, res: express.Response) => {
     const { user } = req;
     const { id } = req.params;
 
