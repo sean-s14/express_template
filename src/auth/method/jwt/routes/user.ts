@@ -1,11 +1,11 @@
 import express from "express";
 const router = express.Router();
 
-import { User as UserSchema } from "../schemas/user";
-import { authenticateToken } from "../middleware/auth";
-import { isAdmin } from "../utils/permissions/auth";
-import { ERRORS } from "../utils/errorMessages";
-import { Request } from "./types";
+import { User as UserSchema } from "../../../schemas/user";
+import { authenticateToken } from "../../../middleware/auth";
+import { isAdmin } from "../../../permissions/auth";
+import { ERRORS } from "../../../utils/errorMessages";
+import { Request } from "../types";
 
 // ========== GET USER ==========
 router.get("/", authenticateToken, async (req: Request, res: express.Response) => {

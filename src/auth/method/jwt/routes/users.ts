@@ -1,11 +1,11 @@
 import express from "express";
 const router = express.Router();
 
-import { User as UserSchema } from "../schemas/user";
-import { authenticateToken } from "../middleware/auth";
-import { isAdmin, isOwnerOrAdmin } from "../utils/permissions/auth";
-import { ERRORS } from "../utils/errorMessages";
-import { Request } from "./types";
+import { User as UserSchema } from "../../../schemas/user";
+import { authenticateToken } from "../../../middleware/auth";
+import { isAdmin, isOwnerOrAdmin } from "../../../permissions/auth";
+import { ERRORS } from "../../../utils/errorMessages";
+import { Request } from "../types";
 
 // middleware that is specific to this router
 // router.use((req: express.Request, res, next) => {

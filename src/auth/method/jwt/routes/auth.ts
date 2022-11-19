@@ -6,12 +6,12 @@ import express from "express";
 const router = express.Router();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { generateUsername2 } from "../utils/auth";
+import { generateUsername2 } from "../../../utils/auth";
  
-import { IUser, User as UserSchema } from "../schemas/user";
-import { Token as TokenSchema } from "../schemas/token";
-import { generateAccessToken, generateRefreshToken } from "../utils/auth";
-import { MSG_TYPES } from "../utils/messageTypes";
+import { IUser, User as UserSchema } from "../../../schemas/user";
+import { Token as TokenSchema } from "../../../schemas/token";
+import { generateAccessToken, generateRefreshToken } from "../../../utils/auth";
+import { MSG_TYPES } from "../../../../utils/messageTypes";
 
 // router.use((req: express.Request, res: express.Response, next: Function) => {
 //     console.log("Request Body:", req?.body);

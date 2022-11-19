@@ -3,7 +3,7 @@ dotenv.config();
 const env: any = process.env
 import express from "express";
 import jwt from "jsonwebtoken";
-import { Request } from "../routes/types";
+import { Request } from "../method/jwt/types";
 
 
 function authenticateToken(req: Request, res: express.Response, next: Function) {

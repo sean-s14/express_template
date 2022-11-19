@@ -54,11 +54,11 @@ app.use(cookieParser(env.COOKIE_SECRET));
 // =============== ROUTES ===============
 import GoogleRoutes from "./src/auth/google/routes";
 app.use("/google", GoogleRoutes);
-import AuthRoutes from "./src/routes/auth";
+import AuthRoutes from "./src/auth/method/jwt/routes/auth";
 app.use("/auth", AuthRoutes);
-import UserRoutes from "./src/routes/user";
+import UserRoutes from "./src/auth/method/jwt/routes/user";
 app.use("/user", UserRoutes);
-import UsersRoutes from "./src/routes/users";
+import UsersRoutes from "./src/auth/method/jwt/routes/users";
 app.use("/users", UsersRoutes);
 import ItemsRoutes from "./src/routes/items";
 app.use("/items", ItemsRoutes);

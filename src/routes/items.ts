@@ -2,9 +2,9 @@ import express from "express";
 const router = express.Router();
 
 import { I_Item, Item as ItemSchema } from "../schemas/item";
-import { authenticateToken } from "../middleware/auth";
-import { isAdmin, isOwner } from "../utils/permissions/auth";
-import { ERRORS } from "../utils/errorMessages";
+import { authenticateToken } from "../auth/middleware/auth";
+import { isAdmin, isOwner } from "../auth/permissions/auth";
+import { ERRORS } from "../auth/utils/errorMessages";
 import { MSG_TYPES } from "../utils/messageTypes";
 
 // middleware that is specific to this router

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { ROLES } from "../utils/permissions/roles";
+import { ROLES } from "../permissions/roles";
 
 export interface IUser {
     _id: mongoose.Types.ObjectId,
