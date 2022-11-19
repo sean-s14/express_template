@@ -52,7 +52,7 @@ app.use(morgan("combined")); // adding morgan to log HTTP requests
 app.use(cookieParser(env.COOKIE_SECRET));
 
 // =============== ROUTES ===============
-import GoogleRoutes from "./src/auth/google/routes";
+import GoogleRoutes from "./src/auth/method/google/routes";
 app.use("/google", GoogleRoutes);
 import AuthRoutes from "./src/auth/method/jwt/routes/auth";
 app.use("/auth", AuthRoutes);

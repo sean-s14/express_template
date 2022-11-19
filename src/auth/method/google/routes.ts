@@ -6,9 +6,9 @@ import express from "express";
 const router = express.Router();
 import { google } from "googleapis";
 
-import { updateOrCreateToken, generateUsername2 } from "../utils/auth";
+import { updateOrCreateToken, generateUsername2 } from "../../utils/auth";
 import googleSetup from "./setup";
-import { User as UserSchema } from "../schemas/user";
+import { User as UserSchema } from "../../schemas/user";
 
 const cookie_options = { secure: true, httpOnly: true, signed: true };
 
