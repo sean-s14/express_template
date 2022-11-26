@@ -4,7 +4,7 @@ import { ROLES } from "../permissions/roles";
 export interface IUser {
     _id: mongoose.Types.ObjectId,
     role?: string,
-    username?: { type: string, index: object, minLength: number, maxLength: number},
+    username: { type: string, index: object, minLength: number, maxLength: number},
     email?: { type: string, index: object, lowercase: boolean, minLength: number, maxLength: number},
     verified?: boolean,
     password?: string,
