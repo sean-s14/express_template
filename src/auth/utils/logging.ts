@@ -4,4 +4,11 @@ const ERRORS = {
     NOT_ADMIN_OR_OWNER: "Only the owner of this object or an administrator can perform this action"
 }
 
-export { ERRORS };
+const MSG_TYPES = {
+    ERROR: "error",
+    SUCCESS: "success",
+    INFO: "info",
+    WARNING: "warning",
+}
+
+export { MSG_TYPES, ERRORS };

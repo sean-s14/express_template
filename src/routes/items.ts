@@ -4,8 +4,8 @@ const router = express.Router();
 import { I_Item, Item as ItemSchema } from "../schemas/item";
 import { authenticateToken } from "../auth/middleware/auth";
 import { isAdmin, isOwner } from "../auth/permissions/auth";
-import { ERRORS } from "../auth/utils/errorMessages";
-import { MSG_TYPES } from "../utils/messageTypes";
+import { ERRORS } from "../auth/utils/logging";
+import { MSG_TYPES } from "../utils/logging";
 
 // middleware that is specific to this router
 // router.use((req: any, res, next) => {

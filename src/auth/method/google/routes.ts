@@ -87,23 +87,28 @@ router.get("/callback", async (req: any, res: express.Response) => {
     const { oauth2Client } = googleSetup();
 
     // ===== GET TOKENS FROM CODE =====
-    const { tokens }: any = await oauth2Client.getToken(code);
-    // console.log("Tokens:", tokens);
+    try {
+        var { tokens }: any = await oauth2Client.getToken(code);
+    } catch (e) {
+        console.log(e);
+        return res.json({ error: "There was an error when logging in" })
+    }
+    console.log("Tokens:", tokens!!);
     
     // ===== GET USER INFO =====
-    let userInfo: any;
     try {
-        userInfo = await getUserInfo(tokens);
+        var userInfo: any = await getUserInfo(tokens);
         // console.log("User Info :", userInfo);
         if (!userInfo) {
-            if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
-            else return res.json({ err: 'Could not redirect' })
+            if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
+            else return res.status(500).json({ err: 'Could not redirect' })
         }
     } catch(e: any) {
         console.log(e);
-        if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+        if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
         else return res.json({ err: 'Could not redirect' })
     }
+    console.log("User Info:", userInfo!!);
 
     // ===== RETURN ERROR PROMPTING EMAIL VERIFICATION =====
     if (!userInfo.verified_email) {
@@ -118,11 +123,11 @@ router.get("/callback", async (req: any, res: express.Response) => {
 
     // ===== GET USER FROM DB USING GOOGLE ID =====
     const google_user: any = await UserSchema.findOne({ googleId: userInfo.id });
-    // console.log("Google User:", google_user);
+    console.log("Google User:", google_user!!);
 
     // ===== GET USER FROM DB USING EMAIL =====
     const basic_user: any = (google_user === null) && await UserSchema.findOne({ email: userInfo.email });
-    // console.log("Basic User:", basic_user);
+    console.log("Basic User:", basic_user!!);
 
     // ===== USER INFO TO CREATE OR UPDATE USER WITH =====
     const update_user_info = {
@@ -150,11 +155,11 @@ router.get("/callback", async (req: any, res: express.Response) => {
         google_user.updateOne({verified: userInfo.verified_email}, async (err: any, doc: any) => {
             if (err) {
                 console.error(err);
-                if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+                if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
                 else return res.json({ err: 'Could not redirect' })
             }
             const newTokens = await updateOrCreateToken(google_user, tokens);
-            console.log("Google Callback:", newTokens)
+            console.log("Google Callback:", newTokens!!)
         });
     } else if (basic_user !== null) {
     // ===== UPDATE BASIC USER WITH GOOGLE ID =====
@@ -163,7 +168,7 @@ router.get("/callback", async (req: any, res: express.Response) => {
         basic_user.updateOne(update_user_info, async (err: any, doc: any) => {
             if (err) {
                 console.error(err);
-                if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+                if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
                 else return res.json({ err: 'Could not redirect' })
             }
             const newTokens = await updateOrCreateToken(basic_user, tokens);
@@ -185,12 +190,12 @@ router.get("/callback", async (req: any, res: express.Response) => {
             // console.log("New User Tokens:", newTokens);
         } catch(e: any) {
             console.error(e);
-            if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+            if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
             else return res.json({ err: 'Could not redirect' })
         }
     }
 
-    if (CLIENT_URL !== undefined) return res.redirect(500, CLIENT_URL);
+    if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
     else return res.json({ err: 'Could not redirect' })
 });
 

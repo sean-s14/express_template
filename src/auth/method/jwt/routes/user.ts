@@ -4,7 +4,7 @@ const router = express.Router();
 import { User as UserSchema } from "../../../schemas/user";
 import { authenticateToken } from "../../../middleware/auth";
 import { isAdmin } from "../../../permissions/auth";
-import { ERRORS } from "../../../utils/errorMessages";
+import { ERRORS } from "../../../utils/logging";
 import { Request } from "../types";
 
 // ========== GET USER ==========

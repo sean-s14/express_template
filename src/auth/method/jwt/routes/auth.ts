@@ -11,7 +11,7 @@ import { generateUsername2 } from "../../../utils/auth";
 import { IUser, User as UserSchema } from "../../../schemas/user";
 import { Token as TokenSchema } from "../../../schemas/token";
 import { generateAccessToken, generateRefreshToken } from "../../../utils/auth";
-import { MSG_TYPES } from "../../../../utils/messageTypes";
+import { MSG_TYPES } from "../../../utils/logging";
 
 
 // =============== SIGNUP ===============
