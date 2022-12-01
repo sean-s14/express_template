@@ -114,11 +114,11 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
         var user: IUser | null = await UserSchema.findOne({ username: username });
         if (!user) {
             user = await UserSchema.findOne({ email: username });
-            if (!user) return res.status(404).json("User with specified username/email could not be found");
+            if (!user) return res.status(404).json({ username: "User with specified username/email could not be found" });
         }
     } catch (e) {
         console.log(e);
-        return res.status(500).json("There was an error when logging in");
+        return res.status(500).json({ [MSG_TYPES.ERROR]: "There was an error when logging in" });
     }
 
     try { // ===== VALIDATE PASSWORD ===== 
@@ -126,7 +126,7 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
         if (!isValid) return res.status(403).json({ password: "Password entered is invalid" });
     } catch (e) {
         console.log(e);
-        return res.status(500).json("There was an issue validating the password");
+        return res.status(500).json({ password: "There was an issue validating the password" });
     }
 
     { // ===== GENERATE ACCESS & REFRESH TOKENS =====
@@ -134,12 +134,12 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
         
         var accessToken = generateAccessToken(user2);
         if (accessToken === null) {
-            return res.json({ err: "Could not generate access token due to missing access token secret" })
+            return res.json({ [MSG_TYPES.ERROR]: "Could not generate access token due to missing access token secret" })
         }
 
         var refreshToken = generateRefreshToken(user2);
         if (refreshToken === null) {
-            return res.json({ err: "Could not generate refresh token due to missing refresh token secret" })
+            return res.json({ [MSG_TYPES.ERROR]: "Could not generate refresh token due to missing refresh token secret" })
         }
     }
 
@@ -175,18 +175,18 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
 router.post("/refresh", async (req: express.Request, res: express.Response) => {
     const { refreshToken } = req.signedCookies;
 
-    if (refreshToken == null) return res.status(401).json({[MSG_TYPES.ERROR]:"No refresh token found in cookie"});
+    if (refreshToken == null) return res.status(401).json({ [MSG_TYPES.ERROR]:"No refresh token found in cookie"});
 
     try { // ===== FIND REFRESH TOKEN IN DATABASE =====
         const refreshTokenInDB = await TokenSchema.findOne({ refresh_token: refreshToken });
         if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresh token in database" });
     } catch (e) {
         console.log(e);
-        return res.json({ error: "There was an error attempting to find refresh token in the database"})
+        return res.json({ [MSG_TYPES.ERROR]: "There was an error attempting to find refresh token in the database"})
     }
 
     jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET, async (err: any, user: any) => {
-        if (err) return res.status(403).json({[MSG_TYPES.ERROR]:"Unable to verify refresh token"});
+        if (err) return res.status(403).json({ [MSG_TYPES.ERROR]: "Unable to verify refresh token" });
 
         // ===== GENERATE ACCESS & REFRESH TOKENS ===== 
         const accessToken = generateAccessToken({ username: user.username });
