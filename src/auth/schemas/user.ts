@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { ROLES } from "../permissions/roles";
+import { generateUsername2 } from "../utils/auth";
 
 export interface IUser {
     _id: mongoose.Types.ObjectId,
@@ -62,5 +63,19 @@ const userSchema = new mongoose.Schema<IUser>({
     updatedAt: { type: Date, default: () => Date.now() },
 });
 
+userSchema.pre('validate', async function(next) {
+    if (this !== undefined) {
+        if (!this.username) {
+            const generated_username = await generateUsername2();
+            if (generated_username !== undefined) {
+                // @ts-ignore
+                this.username = generated_username;
+            } else {
+                throw Error("A username could not be generated")
+            }
+        } 
+    }
+    next();
+});
 
 export const User = mongoose.model<IUser>("User", userSchema);

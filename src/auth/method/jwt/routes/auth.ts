@@ -6,18 +6,16 @@ import express from "express";
 const router = express.Router();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { generateUsername2 } from "../../../utils/auth";
  
 import { IUser, User as UserSchema } from "../../../schemas/user";
 import { Token as TokenSchema } from "../../../schemas/token";
-import { generateAccessToken, generateRefreshToken } from "../../../utils/auth";
+import { generateAccessToken, generateRefreshToken, generateUsername2 } from "../../../utils/auth";
 import { MSG_TYPES } from "../../../utils/logging";
 
 
 // =============== SIGNUP ===============
 router.post("/signup", async (req: express.Request, res: express.Response) => {
-    const { email, password, password2 } = req.body;
-    const { username } = req.body;
+    const { email, username, password, password2 } = req.body;
     interface IUserBody { username?: string, email?: string, password: string};
     var userBody: IUserBody = { password: "" };
 
@@ -69,14 +67,6 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
             } catch (err: any) {
                 console.log(err);
                 return res.status(500).json({ username: "There was an error when validating username" });
-            }
-        } else {
-            try {
-                const generated_username = await generateUsername2();
-                userBody.username = generated_username;
-            } catch (err: any) {
-                console.log(err);
-                return res.status(500).json({ username: "There was an error when generating username" });
             }
         }
     }

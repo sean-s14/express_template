@@ -6,7 +6,7 @@ import express from "express";
 const router = express.Router();
 import { google } from "googleapis";
 
-import { updateOrCreateToken, generateUsername2 } from "../../utils/auth";
+import { updateOrCreateToken } from "../../utils/auth";
 import googleSetup from "./setup";
 import { User as UserSchema } from "../../schemas/user";
 
@@ -176,14 +176,11 @@ router.get("/callback", async (req: any, res: express.Response) => {
         });
     } else {
     // ===== CREATE USER =====
-        let username = await generateUsername2();    
-
         // ===== CREATE USER =====
         try {
             const newUser = new UserSchema({
                 ...update_user_info,
                 email: userInfo.email,
-                username: username,
             });
             await newUser.save();
             const newTokens = await updateOrCreateToken(newUser, tokens);
