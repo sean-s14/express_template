@@ -6,7 +6,7 @@ export interface IUser {
     _id: mongoose.Types.ObjectId,
     role?: string,
     username: { type: string, index: object, minLength: number, maxLength: number},
-    email?: { type: string, index: object, lowercase: boolean, minLength: number, maxLength: number},
+    email: { type: string, require: boolean, index: object, lowercase: boolean, minLength: number, maxLength: number},
     verified?: boolean,
     password?: string,
     firstName?: string,
@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema<IUser>({
     },
     email: { 
         type: String, 
+        require: true,
         index: { unique: true, sparse: true },
         // unique: true,
         lowercase: true,

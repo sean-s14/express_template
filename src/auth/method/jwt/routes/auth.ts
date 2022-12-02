@@ -6,10 +6,11 @@ import express from "express";
 const router = express.Router();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import * as EmailValidator from "email-validator";
  
 import { IUser, User as UserSchema } from "../../../schemas/user";
 import { Token as TokenSchema } from "../../../schemas/token";
-import { generateAccessToken, generateRefreshToken, generateUsername2 } from "../../../utils/auth";
+import { generateAccessToken, generateRefreshToken } from "../../../utils/auth";
 import { MSG_TYPES } from "../../../utils/logging";
 
 
@@ -43,6 +44,10 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
         }
 
         if (email) {
+            if (EmailValidator.validate(email)) {
+                return res.status(400).json({ email: "The email entered is not a valid email address" })
+            }
+
             try {
                 const userExists = await UserSchema.findOne({ email: email });
                 if (userExists) {
@@ -54,6 +59,8 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
                 console.log(err);
                 return res.status(500).json({ email: "There was an error when validating email" });
             }
+        } else {
+            return res.status(400).json({ [MSG_TYPES.ERROR]: "You must enter an email address" });
         }
 
         if (username) {
