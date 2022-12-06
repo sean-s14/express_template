@@ -45,7 +45,6 @@ describe("Authentication with JWT", function () {
 					const status = res.statusCode;
 					const body = res.body;
 					access_token = res.body["accessToken"] || null;
-					console.log(access_token);
 					expect(status).to.equal(200);
 					expect(body).to.be.property("accessToken");
 					done();
@@ -55,7 +54,7 @@ describe("Authentication with JWT", function () {
 	})
 
 	describe("GET /user", function () {
-		it("Responds with Access Token", function (done) {
+		it("Responds with User Info", function (done) {
 			request(app)
 				.get("/user")
 				.set("Authorization", `Bearer ${access_token}`)
@@ -70,6 +69,46 @@ describe("Authentication with JWT", function () {
 					expect(body).to.be.property("email");
 					expect(body).to.be.property("createdAt");
 					expect(body).to.be.property("updatedAt");
+					done();
+				})
+				.catch((err: any) => done(err));
+		});
+	})
+
+	describe("PATCH /user", function () {
+		it("Responds with User Info", function (done) {
+			request(app)
+				.patch("/user")
+				.send({ firstName: "Sean" })
+				.set("Authorization", `Bearer ${access_token}`)
+				.then((res: any) => {
+					const status = res.statusCode;
+					const body = res.body;
+					expect(status).to.equal(200);
+					expect(body).to.be.property("verified");
+					expect(body).to.be.property("_id");
+					expect(body).to.be.property("role");
+					expect(body).to.be.property("username");
+					expect(body).to.be.property("email");
+					expect(body).to.be.property("createdAt");
+					expect(body).to.be.property("updatedAt");
+					expect(body).to.be.property("firstName");
+					done();
+				})
+				.catch((err: any) => done(err));
+		});
+	})
+
+	describe("DELETE /user", function () {
+		it("Responds with Success Message", function (done) {
+			request(app)
+				.delete("/user")
+				.set("Authorization", `Bearer ${access_token}`)
+				.then((res: any) => {
+					const status = res.statusCode;
+					const body = res.body;
+					expect(status).to.equal(200);
+					expect(body).to.be.property("success");
 					done();
 				})
 				.catch((err: any) => done(err));
