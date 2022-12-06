@@ -10,7 +10,7 @@ import * as EmailValidator from "email-validator";
  
 import { IUser, User as UserSchema } from "../../../schemas/user";
 import { Token as TokenSchema } from "../../../schemas/token";
-import { generateAccessToken, generateRefreshToken } from "../../../utils/auth";
+import { generateAccessToken, generateRefreshToken, IUser as UtilsIUser } from "../../../utils/auth";
 import { MSG_TYPES } from "../../../utils/logging";
 
 
@@ -44,7 +44,7 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
         }
 
         if (email) {
-            if (EmailValidator.validate(email)) {
+            if (!EmailValidator.validate(email)) {
                 return res.status(400).json({ email: "The email entered is not a valid email address" })
             }
 
@@ -64,6 +64,9 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
         }
 
         if (username) {
+            if (username.includes('@')) {
+                return res.status(400).json({ username: "Username must not contain \"@\" symbol" })
+            }
             try {
                 const userExists = await UserSchema.findOne({ username: username });
                 if (userExists) {
@@ -127,7 +130,14 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
     }
 
     { // ===== GENERATE ACCESS & REFRESH TOKENS =====
-        const user2 = { username: username, id: user._id, role: user.role };
+        let user2: UtilsIUser = { email: username, username: username, id: user._id, role: user.role };
+        if (username.includes('@')) {
+            // @ts-ignore
+            delete user2["username"];
+        } else {
+            // @ts-ignore
+            delete user2["email"];
+        }
         
         var accessToken = generateAccessToken(user2);
         if (accessToken === null) {

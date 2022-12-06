@@ -10,10 +10,28 @@ import { Request } from "../types";
 // ========== GET USER ==========
 router.get("/", authenticateToken, async (req: Request, res: express.Response) => {
     const { user } = req;
-    
+    const username = user?.username;
+    const email = user?.email;
+    const projection = "verified _id role username email createdAt updatedAt";
+
     try {
-        const userObj = await UserSchema.findOne({ username: user?.username });
-        return res.status(200).json(userObj);
+        if (username) {
+            var userObj = await UserSchema.findOne({ username: username }, projection);
+            if (userObj === null) {
+                return res.status(404).json({ error: `User with username "${username}" could not be found` });
+            } else {
+                return res.status(200).json(userObj);
+            }
+        } else if (email) {
+            var userObj = await UserSchema.findOne({ email: email }, projection);
+            if (userObj === null) {
+                return res.status(404).json({ error: `User with email "${email}" could not be found` });
+            } else {
+                return res.status(200).json(userObj);
+            }
+        } else {
+            return res.status(400).json({ error: "There was no username or email attached to access token" })
+        } 
     } catch(e: any) {
         console.log(e)
         return res.status(500).json(e.errors);

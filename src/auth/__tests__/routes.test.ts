@@ -4,7 +4,9 @@ import request from "supertest";
 import { app } from "../../../app";
 import { connect, close } from "../../__tests__/db";
 
-describe("Signup and Login with JWT", function () {
+describe("Authentication with JWT", function () {
+
+	var access_token: any;
 
 	before( done => {
 		connect()
@@ -19,15 +21,15 @@ describe("Signup and Login with JWT", function () {
 	})
 	
 	describe("POST /auth/signup", function () {
-		it('Responds with Success Message', function (done) {
+		it("Responds with Success Message", function (done) {
 			request(app)
-				.post('/auth/signup')
-				.send({ username: 'basic01@gmail.com', password: "S3an1234", password2: "S3an1234" })
+				.post("/auth/signup")
+				.send({ email: "basic01@gmail.com", password: "S3an1234", password2: "S3an1234" })
 				.then((res: any) => {
 					const status = res.statusCode;
 					const body = res.body;
 					expect(status).to.equal(201);
-					expect(body).to.be.property('success');
+					expect(body).to.be.property("success");
 					done();
 				})
 				.catch((err: any) => done(err));
@@ -35,15 +37,39 @@ describe("Signup and Login with JWT", function () {
 	})
 
 	describe("POST /auth/login", function () {
-		it('Responds with Access Token', function (done) {
+		it("Responds with Access Token", function (done) {
 			request(app)
-				.post('/auth/login')
-				.send({ username: 'basic01@gmail.com', password: "S3an1234" })
+				.post("/auth/login")
+				.send({ username: "basic01@gmail.com", password: "S3an1234" })
+				.then((res: any) => {
+					const status = res.statusCode;
+					const body = res.body;
+					access_token = res.body["accessToken"] || null;
+					console.log(access_token);
+					expect(status).to.equal(200);
+					expect(body).to.be.property("accessToken");
+					done();
+				})
+				.catch((err: any) => done(err));
+		});
+	})
+
+	describe("GET /user", function () {
+		it("Responds with Access Token", function (done) {
+			request(app)
+				.get("/user")
+				.set("Authorization", `Bearer ${access_token}`)
 				.then((res: any) => {
 					const status = res.statusCode;
 					const body = res.body;
 					expect(status).to.equal(200);
-					expect(body).to.be.property('accessToken');
+					expect(body).to.be.property("verified");
+					expect(body).to.be.property("_id");
+					expect(body).to.be.property("role");
+					expect(body).to.be.property("username");
+					expect(body).to.be.property("email");
+					expect(body).to.be.property("createdAt");
+					expect(body).to.be.property("updatedAt");
 					done();
 				})
 				.catch((err: any) => done(err));
@@ -51,13 +77,13 @@ describe("Signup and Login with JWT", function () {
 	})
 
 
-	// it('Fail, note requires text', (done) => {
-	//   request(app).post('/notes')
-	//     .send({ name: 'NOTE' })
+	// it("Fail, note requires text", (done) => {
+	//   request(app).post("/notes")
+	//     .send({ name: "NOTE" })
 	//     .then((res) => {
 	//       const body = res.body;
 	//       expect(body.errors.text.name)
-	//         .to.equal('ValidatorError')
+	//         .to.equal("ValidatorError")
 	//       done();
 	//     })
 	//     .catch((err) => done(err));

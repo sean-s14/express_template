@@ -10,8 +10,12 @@ import { updateOrCreateToken } from "../../utils/auth";
 import googleSetup from "./setup";
 import { User as UserSchema } from "../../schemas/user";
 
+// secure: Only works with HTTPS
+// httpOnly: Not accessible to JavaScript on the client-side
+// signed: ???
 const cookie_options = { secure: true, httpOnly: true, signed: true };
 
+const REDIRECT_FAIL = "Unable to redirect";
 
 interface ITokens {
     refresh_token: string,
@@ -101,12 +105,12 @@ router.get("/callback", async (req: any, res: express.Response) => {
         // console.log("User Info :", userInfo);
         if (!userInfo) {
             if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
-            else return res.status(500).json({ err: 'Could not redirect' })
+            else return res.status(500).json({ error: REDIRECT_FAIL })
         }
     } catch(e: any) {
         console.log(e);
         if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
-        else return res.json({ err: 'Could not redirect' })
+        else return res.json({ error: REDIRECT_FAIL })
     }
     console.log("User Info:", userInfo!!);
 
@@ -118,7 +122,7 @@ router.get("/callback", async (req: any, res: express.Response) => {
             { secure: true, httpOnly: false, signed: true }
         )
         if (CLIENT_URL !== undefined) return res.redirect(401, CLIENT_URL);
-        else return res.json({ err: 'Could not redirect' })
+        else return res.json({ error: REDIRECT_FAIL })
     }
 
     // ===== GET USER FROM DB USING GOOGLE ID =====
@@ -156,20 +160,20 @@ router.get("/callback", async (req: any, res: express.Response) => {
             if (err) {
                 console.error(err);
                 if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
-                else return res.json({ err: 'Could not redirect' })
+                else return res.json({ error: REDIRECT_FAIL })
             }
             const newTokens = await updateOrCreateToken(google_user, tokens);
             console.log("Google Callback:", newTokens!!)
         });
     } else if (basic_user !== null) {
     // ===== UPDATE BASIC USER WITH GOOGLE ID =====
-        basic_user.password = undefined;
+        basic_user.password = undefined;  // TODO: Why?
         basic_user.save()
         basic_user.updateOne(update_user_info, async (err: any, doc: any) => {
             if (err) {
                 console.error(err);
                 if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
-                else return res.json({ err: 'Could not redirect' })
+                else return res.json({ error: REDIRECT_FAIL })
             }
             const newTokens = await updateOrCreateToken(basic_user, tokens);
             console.log("Basic Callback:", newTokens)
@@ -188,12 +192,12 @@ router.get("/callback", async (req: any, res: express.Response) => {
         } catch(e: any) {
             console.error(e);
             if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
-            else return res.json({ err: 'Could not redirect' })
+            else return res.json({ error: REDIRECT_FAIL })
         }
     }
 
     if (CLIENT_URL !== undefined) return res.redirect(301, CLIENT_URL);
-    else return res.json({ err: 'Could not redirect' })
+    else return res.json({ error: REDIRECT_FAIL })
 });
 
 router.get("/me", async (req: express.Request, res: express.Response) => {

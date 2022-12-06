@@ -9,11 +9,25 @@ import { generateUsername } from "unique-username-generator";
 import { IToken, Token as TokenSchema } from "../schemas/token";
 import { User as UserSchema } from "../schemas/user";
 
-interface IUser {
-    username: string,
-    id?: mongoose.Types.ObjectId,
-    role?: string,
+interface IUserBase {
+    id?: mongoose.Types.ObjectId;
+    role?: string;
 }
+
+interface IUserName extends IUserBase {
+    username: string;
+}
+
+interface IUserEmail extends IUserBase {
+    email: string;
+}
+
+interface IUserNameAndEmail extends IUserBase {
+    username: string;
+    email: string;
+}
+
+type IUser = IUserName | IUserEmail | IUserNameAndEmail;
 
 function generateAccessToken(user: IUser): string | null {
     if (env?.ACCESS_TOKEN_SECRET === undefined) return null;
@@ -43,7 +57,6 @@ const generateUsername2 = async () => {
         username = generateUsername("", 3);
         userExists = await UserSchema.findOne({ username: username });
     }
-    console.log("Generated Username:", username)
     return username;
 }
 
@@ -52,4 +65,6 @@ export {
     generateRefreshToken,
     updateOrCreateToken,
     generateUsername2,
+    
+    IUser,
 }
