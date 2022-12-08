@@ -21,37 +21,222 @@ describe("Authentication with JWT", function () {
 	})
 	
 	describe("POST /auth/signup", function () {
-		it("Responds with Success Message", function (done) {
-			request(app)
-				.post("/auth/signup")
-				.send({ email: "basic01@gmail.com", password: "S3an1234", password2: "S3an1234" })
-				.then((res: any) => {
-					const status = res.statusCode;
-					const body = res.body;
-					expect(status).to.equal(201);
-					expect(body).to.be.property("success");
-					done();
-				})
-				.catch((err: any) => done(err));
-		});
+		describe("Signup w/ valid credentials", function () {
+			it("Responds with success message", function (done) {
+				request(app)
+					.post("/auth/signup")
+					.send({ email: "basic01@gmail.com", password: "S3an1234", password2: "S3an1234" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(201);
+						expect(body).to.be.property("success");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("Signup w/ invalid password(s) that-", function () {
+			describe("don't match", function () {
+				it("Responds with error message", function (done) {
+					request(app)
+						.post("/auth/signup")
+						.send({ email: "basic02@gmail.com", password: "S3an1234", password2: "S3an12345" })
+						.then((res: any) => {
+							const status = res.statusCode;
+							const body = res.body;
+							expect(status).to.equal(400);
+							expect(body).to.be.property("password2");
+							done();
+						})
+						.catch((err: any) => done(err));
+				});
+			})
+
+			describe("is too short", function () {
+				it("Responds with error message", function (done) {
+					request(app)
+						.post("/auth/signup")
+						.send({ email: "basic02@gmail.com", password: "S3an123", password2: "S3an123" })
+						.then((res: any) => {
+							const status = res.statusCode;
+							const body = res.body;
+							expect(status).to.equal(400);
+							expect(body).to.be.property("password");
+							done();
+						})
+						.catch((err: any) => done(err));
+				});
+			})
+
+			describe("is too long", function () {
+				it("Responds with error message", function (done) {
+					request(app)
+						.post("/auth/signup")
+						.send({
+							email: "basic02@gmail.com",
+							password: "S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S",
+							password2: "S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S3an1234S"
+						})
+						.then((res: any) => {
+							const status = res.statusCode;
+							const body = res.body;
+							expect(status).to.equal(400);
+							expect(body).to.be.property("password");
+							done();
+						})
+						.catch((err: any) => done(err));
+				});
+			})
+		})
+
+		describe("Signup w/ email already in use", function () {
+			it("Responds with error message", function (done) {
+				request(app)
+					.post("/auth/signup")
+					.send({ email: "basic01@gmail.com", password: "S3an1234", password2: "S3an1234" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(400);
+						expect(body).to.be.property("email");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("Signup w/ invalid email", function () {
+			it("Responds with error message", function (done) {
+				request(app)
+					.post("/auth/signup")
+					.send({ email: "basic01gmail.com", password: "S3an1234", password2: "S3an1234" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(400);
+						expect(body).to.be.property("email");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
 	})
 
 	describe("POST /auth/login", function () {
-		it("Responds with Access Token", function (done) {
-			request(app)
-				.post("/auth/login")
-				.send({ username: "basic01@gmail.com", password: "S3an1234" })
-				.then((res: any) => {
-					const status = res.statusCode;
-					const body = res.body;
-					access_token = res.body["accessToken"] || null;
-					expect(status).to.equal(200);
-					expect(body).to.be.property("accessToken");
-					done();
-				})
-				.catch((err: any) => done(err));
-		});
+		describe("Login with valid credentials", function () {
+			it("Responds with access token", function (done) {
+				request(app)
+					.post("/auth/login")
+					.send({ username: "basic01@gmail.com", password: "S3an1234" })
+					.then((res: any) => {
+						// TODO: Get refresh token as well
+						const status = res.statusCode;
+						const body = res.body;
+						access_token = res.body["accessToken"] || null;
+						expect(status).to.equal(200);
+						expect(body).to.be.property("accessToken");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("Login w/o password", function () {
+			it("Responds with error message", function (done) {
+				request(app)
+					.post("/auth/login")
+					.send({ username: "basic01@gmail.com" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(400);
+						expect(body).to.be.property("password");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("Login w/o username/email", function () {
+			it("Responds with error message", function (done) {
+				request(app)
+					.post("/auth/login")
+					.send({ password: "S3an1234" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(400);
+						expect(body).to.be.property("username");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("Login with incorrect username/email", function () {
+			it("Responds with error message", function (done) {
+				request(app)
+					.post("/auth/login")
+					.send({ username: "anInvalidUsername1234", password: "S3an1234" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(404);
+						expect(body).to.be.property("username");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("Login with incorrect password", function () {
+			it("Responds with error message", function (done) {
+				request(app)
+					.post("/auth/login")
+					.send({ username: "basic01@gmail.com", password: "S3an12345" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(403);
+						expect(body).to.be.property("password");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
 	})
+
+	// describe("POST /auth/logout", function () {
+	// 	describe("Logout with valid refresh token", function () {
+	// 		it("Responds with status 204", function (done) {
+	// 			request(app)
+	// 				.post("/auth/logout")
+	// 				.then((res: any) => {
+	// 					const status = res.statusCode;
+	// 					expect(status).to.equal(204);
+	// 					done();
+	// 				})
+	// 				.catch((err: any) => done(err));
+	// 		});
+	// 	})
+
+	// 	describe("Logout w/ invalid refresh token", function () {
+	// 		it("Responds with error message", function (done) {
+	// 			request(app)
+	// 				.post("/auth/logout")
+	// 				.then((res: any) => {
+	// 					const status = res.statusCode;
+	// 					const body = res.body;
+	// 					expect(status).to.equal(400);
+	// 					expect(body).to.be.property("error");
+	// 					done();
+	// 				})
+	// 				.catch((err: any) => done(err));
+	// 		});
+	// 	})
+	// })
 
 	describe("GET /user", function () {
 		it("Responds with User Info", function (done) {

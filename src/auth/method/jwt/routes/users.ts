@@ -22,7 +22,7 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
             const allUsers = await UserSchema.find();
             return res.status(200).json(allUsers);
         } else {
-            const allUsers = await UserSchema.find({}, "username email createdAt");
+            const allUsers = await UserSchema.find({}, "username createdAt");
             return res.status(200).json(allUsers);
         }
     } catch(e: any) {
@@ -41,7 +41,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
             const userObj = await UserSchema.findById(userId);
             return res.status(200).json(userObj);
         } else {
-            const userObj = await UserSchema.findById(userId, "username email createdAt");
+            const userObj = await UserSchema.findById(userId, "username createdAt");
             return res.status(200).json(userObj);
         }
     } catch(e: any) {
@@ -54,14 +54,17 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
 router.patch("/:id", authenticateToken, async (req: Request, res: express.Response) => {
     const { user, body } = req;
     const userId = req.params.id;
-    console.log("Body:", body);
 
     if (!isOwnerOrAdmin(user, userId)) {
-        return res.status(403).send({"error": ERRORS.NOT_ADMIN_OR_OWNER});
+        return res.status(403).json({ error: ERRORS.NOT_ADMIN_OR_OWNER});
     }
 
     if (body.hasOwnProperty("role") && !isAdmin(user)) {
-        return res.status(403).send({"error": ERRORS.NOT_ADMIN});
+        return res.status(403).json({ error: ERRORS.NOT_ADMIN});
+    }
+
+    if (body.hasOwnProperty("verified") && !isAdmin(user)) {
+        return res.status(403).json({ error: ERRORS.NOT_ADMIN});
     }
 
     try {

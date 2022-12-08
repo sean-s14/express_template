@@ -33,14 +33,17 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
         }
         if (password && password.length < 8) {
             return res.status(400).json({ password: "Password must be at least 8 characters long" });
-        }    
+        }
+        if (password && password.length > 128) {
+            return res.status(400).json({ password: "Password must be less than 128 characters long" });
+        }
     }
 
     { // ========== USERNAME & EMAIL VALIDATION ==========
         
         // Verify that no user with username/email already exists
         if (!username && !email) {
-            return res.status(400).json({ [MSG_TYPES.ERROR]: "You must enter either an email or username" });
+            return res.status(400).json({ [MSG_TYPES.ERROR]: "You must enter your email" });
         }
 
         if (email) {
@@ -109,6 +112,15 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
 router.post("/login", async (req: express.Request, res: express.Response) => {
     // TODO: Search through database for user with specified username/email and then match password 
     const { username, password } = req.body;
+
+    { // ===== CHECK FOR USERNAME & PASSWORD =====
+        if (!username) {
+            return res.status(400).json({ username: "You must enter your username/email" });
+        }
+        if (!password) {
+            return res.status(400).json({ password: "Please enter your password" });
+        }
+    }
 
     try { // ===== FIND USER WITH EMAIL/USERNAME =====
         var user: IUser | null = await UserSchema.findOne({ username: username });
