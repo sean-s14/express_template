@@ -2,7 +2,7 @@ import express from "express";
 const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
-import { authenticateToken } from "../../../middleware/auth";
+import { authenticateToken, checkPermissions } from "../../../middleware/auth";
 import { isAdmin, isSuperuser } from "../../../permissions/auth";
 import { ERRORS, MSG_TYPES } from "../../../utils/logging";
 import { Request } from "../types";
@@ -39,20 +39,10 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
 });
 
 // ========== UPDATE USER ==========
-router.patch("/", authenticateToken, async (req: Request, res: express.Response) => {
+router.patch("/", authenticateToken, checkPermissions, async (req: Request, res: express.Response) => {
     const { user, body } = req;
     const username = user?.username;
     const email = user?.email;
-
-    // Do not allow user to change their role unless they are an admin
-    if (body.hasOwnProperty("role") && !isSuperuser(user)) {
-        return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER });
-    }
-
-    // Do not allow user to change the 'verified' attribute unless they are an admin
-    if (body.hasOwnProperty("verified") && !isAdmin(user)) {
-        return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN });
-    }
 
     try {
         if (username) {

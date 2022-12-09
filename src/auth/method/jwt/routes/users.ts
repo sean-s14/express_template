@@ -2,13 +2,8 @@ import express from "express";
 const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
-import { authenticateToken } from "../../../middleware/auth";
-import { 
-    isAdmin,
-    isSuperuser, 
-    isOwnerOrAdmin, 
-    isOwnerOrSuperuser,
-} from "../../../permissions/auth";
+import { authenticateToken, checkPermissions } from "../../../middleware/auth";
+import { isAdmin, isOwnerOrAdmin } from "../../../permissions/auth";
 import { ERRORS, MSG_TYPES } from "../../../utils/logging";
 import { Request } from "../types";
 
@@ -56,20 +51,12 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
 });
 
 // ========== UPDATE USER ==========
-router.patch("/:id", authenticateToken, async (req: Request, res: express.Response) => {
+router.patch("/:id", authenticateToken, checkPermissions, async (req: Request, res: express.Response) => {
     const { user, body } = req;
     const userId = req.params.id;
 
     if (!isOwnerOrAdmin(user, userId)) {
         return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN_OR_OWNER});
-    }
-
-    if (body.hasOwnProperty("role") && !isSuperuser(user)) {
-        return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER});
-    }
-
-    if (body.hasOwnProperty("verified") && !isAdmin(user)) {
-        return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN});
     }
 
     try {
