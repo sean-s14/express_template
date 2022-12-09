@@ -3,8 +3,13 @@ const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
 import { authenticateToken } from "../../../middleware/auth";
-import { isAdmin, isOwnerOrAdmin } from "../../../permissions/auth";
-import { ERRORS } from "../../../utils/logging";
+import { 
+    isAdmin,
+    isSuperuser, 
+    isOwnerOrAdmin, 
+    isOwnerOrSuperuser,
+} from "../../../permissions/auth";
+import { ERRORS, MSG_TYPES } from "../../../utils/logging";
 import { Request } from "../types";
 
 // middleware that is specific to this router
@@ -56,15 +61,15 @@ router.patch("/:id", authenticateToken, async (req: Request, res: express.Respon
     const userId = req.params.id;
 
     if (!isOwnerOrAdmin(user, userId)) {
-        return res.status(403).json({ error: ERRORS.NOT_ADMIN_OR_OWNER});
+        return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN_OR_OWNER});
     }
 
-    if (body.hasOwnProperty("role") && !isAdmin(user)) {
-        return res.status(403).json({ error: ERRORS.NOT_ADMIN});
+    if (body.hasOwnProperty("role") && !isSuperuser(user)) {
+        return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER});
     }
 
     if (body.hasOwnProperty("verified") && !isAdmin(user)) {
-        return res.status(403).json({ error: ERRORS.NOT_ADMIN});
+        return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN});
     }
 
     try {
@@ -86,19 +91,17 @@ router.delete("/:id", authenticateToken, async (req: Request, res: express.Respo
     const userId = req.params.id;
 
     if (!isOwnerOrAdmin(user, userId)) {
-        return res.status(403).send({
-            "error": "Only the owner of this account or an administrator can perform this action"
-        });
+        return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN_OR_OWNER });
     }
 
     try {
         const userObj = await UserSchema.findOneAndDelete({ username: user?.username });
         if (userObj === null) {
             return res.status(400).json(
-                { "msg": `The account with username ${user?.username} does not exist` }
+                { [MSG_TYPES.ERROR]: `The account with username ${user?.username} does not exist` }
             );
         }
-        return res.status(200).json({ "msg": "Your account has successfully been deleted" });
+        return res.status(200).json({ [MSG_TYPES.SUCCESS]: "Your account has successfully been deleted" });
     } catch(e: any) {
         console.log(e)
         return res.status(500).json(e.errors);

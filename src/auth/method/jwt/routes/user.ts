@@ -3,8 +3,8 @@ const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
 import { authenticateToken } from "../../../middleware/auth";
-import { isAdmin } from "../../../permissions/auth";
-import { ERRORS } from "../../../utils/logging";
+import { isAdmin, isSuperuser } from "../../../permissions/auth";
+import { ERRORS, MSG_TYPES } from "../../../utils/logging";
 import { Request } from "../types";
 
 // ========== GET USER ==========
@@ -18,19 +18,19 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
         if (username) {
             const userObj = await UserSchema.findOne({ username: username }, projection);
             if (userObj === null) {
-                return res.status(404).json({ error: `User with username "${username}" could not be found` });
+                return res.status(404).json({ [MSG_TYPES.ERROR]: `User with username "${username}" could not be found` });
             } else {
                 return res.status(200).json(userObj);
             }
         } else if (email) {
             const userObj = await UserSchema.findOne({ email: email }, projection);
             if (userObj === null) {
-                return res.status(404).json({ error: `User with email "${email}" could not be found` });
+                return res.status(404).json({ [MSG_TYPES.ERROR]: `User with email "${email}" could not be found` });
             } else {
                 return res.status(200).json(userObj);
             }
         } else {
-            return res.status(400).json({ error: "There was no username or email attached to access token" })
+            return res.status(400).json({ [MSG_TYPES.ERROR]: "There was no username or email attached to access token" })
         } 
     } catch(e: any) {
         console.log(e)
@@ -45,13 +45,13 @@ router.patch("/", authenticateToken, async (req: Request, res: express.Response)
     const email = user?.email;
 
     // Do not allow user to change their role unless they are an admin
-    if (body.hasOwnProperty("role") && !isAdmin(user)) {
-        return res.status(403).send({ error: ERRORS.NOT_ADMIN });
+    if (body.hasOwnProperty("role") && !isSuperuser(user)) {
+        return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER });
     }
 
     // Do not allow user to change the 'verified' attribute unless they are an admin
     if (body.hasOwnProperty("verified") && !isAdmin(user)) {
-        return res.status(403).send({ error: ERRORS.NOT_ADMIN });
+        return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN });
     }
 
     try {
@@ -74,7 +74,7 @@ router.patch("/", authenticateToken, async (req: Request, res: express.Response)
             delete userObj?.__v;
             return res.status(200).json(userObj);
         } else {
-            return res.status(400).json({ error: "There was no username or email attached to access token" })
+            return res.status(400).json({ [MSG_TYPES.ERROR]: "There was no username or email attached to access token" })
         }
     } catch(e: any) {
         console.log(e)
@@ -93,18 +93,18 @@ router.delete("/", authenticateToken, async (req: Request, res: any) => {
             const userObj = await UserSchema.findOneAndDelete({ username: username });
             if (userObj === null) {
                 return res.status(400).json(
-                    { error: `The account with username ${username} does not exist` }
+                    { [MSG_TYPES.ERROR]: `The account with username ${username} does not exist` }
                 );
             }
         } else if (email) {
             const userObj = await UserSchema.findOneAndDelete({ email: email });
             if (userObj === null) {
                 return res.status(400).json(
-                    { error: `The account with email ${email} does not exist` }
+                    { [MSG_TYPES.ERROR]: `The account with email ${email} does not exist` }
                 );
             }
         } else {
-            return res.status(400).json({ error: "There was no username or email attached to access token" });
+            return res.status(400).json({ [MSG_TYPES.ERROR]: "There was no username or email attached to access token" });
         }
         return res.status(200).json({ success: "Your account has successfully been deleted" });
     } catch(e: any) {
