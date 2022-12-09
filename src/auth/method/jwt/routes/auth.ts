@@ -11,13 +11,13 @@ import * as EmailValidator from "email-validator";
 import { IUser, User as UserSchema } from "../../../schemas/user";
 import { Token as TokenSchema } from "../../../schemas/token";
 import { generateAccessToken, generateRefreshToken, IUser as UtilsIUser } from "../../../utils/auth";
-import { MSG_TYPES } from "../../../utils/logging";
+import { MSG_TYPES, log } from "../../../utils/logging";
 
 
 // =============== SIGNUP ===============
 router.post("/signup", async (req: express.Request, res: express.Response) => {
-    const { email, username, password, password2 } = req.body;
-    interface IUserBody { username?: string, email?: string, password: string};
+    const { email, password, password2 } = req.body;
+    interface IUserBody { email?: string, password: string };
     var userBody: IUserBody = { password: "" };
 
     
@@ -39,19 +39,13 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
         }
     }
 
-    { // ========== USERNAME & EMAIL VALIDATION ==========
-        
-        // Verify that no user with username/email already exists
-        if (!username && !email) {
-            return res.status(400).json({ [MSG_TYPES.ERROR]: "You must enter your email" });
-        }
-
+    { // ========== EMAIL VALIDATION ==========
         if (email) {
             if (!EmailValidator.validate(email)) {
                 return res.status(400).json({ email: "The email entered is not a valid email address" })
             }
-
-            try {
+            
+            try { // Verify that no user with username/email already exists
                 const userExists = await UserSchema.findOne({ email: email });
                 if (userExists) {
                     return res.status(400).json({ email: "A user with this email already exists" });
@@ -59,28 +53,11 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
                     userBody.email = email;
                 }
             } catch (err: any) {
-                console.log(err);
+                log(err);
                 return res.status(500).json({ email: "There was an error when validating email" });
             }
         } else {
             return res.status(400).json({ [MSG_TYPES.ERROR]: "You must enter an email address" });
-        }
-
-        if (username) {
-            if (username.includes('@')) {
-                return res.status(400).json({ username: "Username must not contain \"@\" symbol" })
-            }
-            try {
-                const userExists = await UserSchema.findOne({ username: username });
-                if (userExists) {
-                    return res.status(400).json({ username: "A user with this username already exists" });
-                } else {
-                    userBody.username = username;
-                }
-            } catch (err: any) {
-                console.log(err);
-                return res.status(500).json({ username: "There was an error when validating username" });
-            }
         }
     }
 
@@ -90,18 +67,18 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
             var hash = await bcrypt.hash(password, salt);
             userBody.password = hash;
         } catch (e: any) {
-            console.log(e);
-            return res.status(500).json({ password: "There was an error when creating a password hash" });
+            log(e);
+            return res.status(500).json({ password: "There was an error when hashing your password" });
         }
     }
 
     { // ========== CREATE USER ==========
         try {
-            const user = new UserSchema(userBody);
+            const user = new UserSchema(userBody, {}, { runValidators: true });
             await user.save();
         } catch(e: any) {
-            console.log(e);
-            return res.status(500).json(e.errors)
+            log(e);
+            return res.status(500).json(e.message);
         }
     }
 
@@ -110,7 +87,6 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
 
 // =============== LOGIN ===============
 router.post("/login", async (req: express.Request, res: express.Response) => {
-    // TODO: Search through database for user with specified username/email and then match password 
     const { username, password } = req.body;
 
     { // ===== CHECK FOR USERNAME & PASSWORD =====
@@ -128,16 +104,16 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
             user = await UserSchema.findOne({ email: username });
             if (!user) return res.status(404).json({ username: "User with specified username/email could not be found" });
         }
-    } catch (e) {
-        console.log(e);
+    } catch (e: any) {
+        log(e);
         return res.status(500).json({ [MSG_TYPES.ERROR]: "There was an error when logging in" });
     }
 
     try { // ===== VALIDATE PASSWORD ===== 
         var isValid = await bcrypt.compare(password, user.password || '');
         if (!isValid) return res.status(403).json({ password: "Password entered is invalid" });
-    } catch (e) {
-        console.log(e);
+    } catch (e: any) {
+        log(e);
         return res.status(500).json({ password: "There was an issue validating the password" });
     }
 
@@ -178,7 +154,7 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
             )
         }
     } catch(e: any) {
-        console.log(e);
+        log(e);
         return res.status(500).json({
             ...e.errors, 
             error: "Failed to update authentication tokens in database"
@@ -199,8 +175,8 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
     try { // ===== FIND REFRESH TOKEN IN DATABASE =====
         const refreshTokenInDB = await TokenSchema.findOne({ refresh_token: refreshToken });
         if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresh token in database" });
-    } catch (e) {
-        console.log(e);
+    } catch (e: any) {
+        log(e);
         return res.json({ [MSG_TYPES.ERROR]: "There was an error attempting to find refresh token in the database"})
     }
 
@@ -217,7 +193,7 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
                 { refresh_token: newRefreshToken, access_token: accessToken },
             )
         } catch(e: any) {
-            console.log(e);
+            log(e);
             return res.status(500).json(e.errors);
         }
 
@@ -242,8 +218,8 @@ router.delete("/logout", async (req: express.Request, res: express.Response) => 
             return res.status(204).json({ [MSG_TYPES.SUCCESS]: "You have been logged out" });
         }
     } catch(e: any) {
-        console.log(e);
-        return res.status(500).json(e.errors);
+        log(e);
+        return res.status(500).json(e.message);
     }
 })
 

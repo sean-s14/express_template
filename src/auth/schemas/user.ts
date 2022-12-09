@@ -6,7 +6,7 @@ export interface IUser {
     _id: mongoose.Types.ObjectId,
     role?: string,
     username: { type: string, index: object, minLength: number, maxLength: number},
-    email: { type: string, require: boolean, index: object, lowercase: boolean, minLength: number, maxLength: number},
+    email: { type: string, require: boolean, index: object, lowercase: boolean },
     verified?: boolean,
     password?: string,
     firstName?: string,
@@ -19,7 +19,6 @@ export interface IUser {
     createdAt: Date
     updatedAt: Date,
 }
-
 
 const userSchema = new mongoose.Schema<IUser>({
     role: { type: String, default: ROLES.BASIC },
@@ -36,8 +35,6 @@ const userSchema = new mongoose.Schema<IUser>({
         index: { unique: true, sparse: true },
         // unique: true,
         lowercase: true,
-        minLength: 3,
-        maxLength: 100,
     },
     verified: { type: Boolean, default: false },
     password: String,
@@ -64,6 +61,7 @@ const userSchema = new mongoose.Schema<IUser>({
     updatedAt: { type: Date, default: () => Date.now() },
 });
 
+
 userSchema.pre('validate', async function(next) {
     if (this !== undefined) {
         if (!this.username) {
@@ -72,11 +70,20 @@ userSchema.pre('validate', async function(next) {
                 // @ts-ignore
                 this.username = generated_username;
             } else {
-                throw Error("A username could not be generated")
+                next(new Error("A username could not be generated"));
             }
-        } 
+        }
     }
     next();
 });
+
+userSchema.pre('findOneAndUpdate', function(next) {
+    const update = this.getUpdate()
+    // @ts-ignore
+    if (update?.username && update.username.includes('@')) {
+        next(new Error("Usernames cannot contain the '@' symbol"));
+    }
+    next()
+})
 
 export const User = mongoose.model<IUser>("User", userSchema);

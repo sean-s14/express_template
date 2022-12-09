@@ -1,10 +1,14 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+const env: any = process.env;
+
 import express from "express";
 const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
 import { authenticateToken, checkPermissions } from "../../../middleware/auth";
 import { isAdmin, isSuperuser } from "../../../permissions/auth";
-import { ERRORS, MSG_TYPES } from "../../../utils/logging";
+import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
 
 // ========== GET USER ==========
@@ -33,7 +37,7 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
             return res.status(400).json({ [MSG_TYPES.ERROR]: "There was no username or email attached to access token" })
         } 
     } catch(e: any) {
-        console.log(e)
+        log(e)
         return res.status(500).json(e.errors);
     }
 });
@@ -43,13 +47,14 @@ router.patch("/", authenticateToken, checkPermissions, async (req: Request, res:
     const { user, body } = req;
     const username = user?.username;
     const email = user?.email;
+    const update_options = { new: true, lean: true, runValidators: true }
 
     try {
         if (username) {
             const userObj = await UserSchema.findOneAndUpdate(
                 { username: username },
                 body,
-                { new: true, lean: true },
+                update_options,
             );
             delete userObj?.password;
             delete userObj?.__v;
@@ -58,7 +63,7 @@ router.patch("/", authenticateToken, checkPermissions, async (req: Request, res:
             const userObj = await UserSchema.findOneAndUpdate(
                 { email: email },
                 body,
-                { new: true, lean: true },
+                update_options,
             );
             delete userObj?.password;
             delete userObj?.__v;
@@ -67,8 +72,8 @@ router.patch("/", authenticateToken, checkPermissions, async (req: Request, res:
             return res.status(400).json({ [MSG_TYPES.ERROR]: "There was no username or email attached to access token" })
         }
     } catch(e: any) {
-        console.log(e)
-        return res.status(500).json(e.errors);
+        log(e);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 });
 
@@ -98,7 +103,7 @@ router.delete("/", authenticateToken, async (req: Request, res: any) => {
         }
         return res.status(200).json({ success: "Your account has successfully been deleted" });
     } catch(e: any) {
-        console.log(e)
+        log(e)
         return res.status(500).json(e.errors);
     }
 });

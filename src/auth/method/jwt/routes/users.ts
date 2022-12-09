@@ -4,14 +4,8 @@ const router = express.Router();
 import { User as UserSchema } from "../../../schemas/user";
 import { authenticateToken, checkPermissions } from "../../../middleware/auth";
 import { isAdmin, isOwnerOrAdmin } from "../../../permissions/auth";
-import { ERRORS, MSG_TYPES } from "../../../utils/logging";
+import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
-
-// middleware that is specific to this router
-// router.use((req: express.Request, res, next) => {
-//     console.log("Request:", req);
-//     next()
-// })
 
 // ========== GET ALL USERS ==========
 router.get("/", authenticateToken, async (req: Request, res: express.Response) => {
@@ -26,7 +20,7 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
             return res.status(200).json(allUsers);
         }
     } catch(e: any) {
-        console.log(e)
+        log(e)
         return res.status(500).json(e.errors);
     }
 });
@@ -45,7 +39,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
             return res.status(200).json(userObj);
         }
     } catch(e: any) {
-        console.log(e)
+        log(e)
         return res.status(500).json(e.errors);
     }
 });
@@ -54,6 +48,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
 router.patch("/:id", authenticateToken, checkPermissions, async (req: Request, res: express.Response) => {
     const { user, body } = req;
     const userId = req.params.id;
+    const update_options = { new: true, lean: true, runValidators: true }
 
     if (!isOwnerOrAdmin(user, userId)) {
         return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN_OR_OWNER});
@@ -63,11 +58,11 @@ router.patch("/:id", authenticateToken, checkPermissions, async (req: Request, r
         const userObj = await UserSchema.findOneAndUpdate(
             { username: user?.username },
             body,
-            { new: true },
+            update_options,
         );
         return res.status(200).json(userObj);
     } catch(e: any) {
-        console.log(e)
+        log(e)
         return res.status(500).json(e.errors);
     }
 });
@@ -90,7 +85,7 @@ router.delete("/:id", authenticateToken, async (req: Request, res: express.Respo
         }
         return res.status(200).json({ [MSG_TYPES.SUCCESS]: "Your account has successfully been deleted" });
     } catch(e: any) {
-        console.log(e)
+        log(e)
         return res.status(500).json(e.errors);
     }
 });
