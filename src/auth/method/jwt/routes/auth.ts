@@ -205,7 +205,7 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
     }
 
     jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET, async (err: any, user: any) => {
-        if (err) return res.status(403).json({ [MSG_TYPES.ERROR]: "Unable to verify refresh token" });
+        if (err) return res.status(403).json({ [MSG_TYPES.ERROR]: "Refresh token is either invalid or has expired" });
 
         // ===== GENERATE ACCESS & REFRESH TOKENS ===== 
         const accessToken = generateAccessToken({ username: user.username });
@@ -237,8 +237,10 @@ router.delete("/logout", async (req: express.Request, res: express.Response) => 
         const token = await TokenSchema.findOneAndDelete({ refresh_token: refreshToken });
         if (token === null) {
             return res.status(400).json({ [MSG_TYPES.ERROR]: "Unable to log out" })
+        } else {
+            // The following success message will likely not be sent due to the status code of 204
+            return res.status(204).json({ [MSG_TYPES.SUCCESS]: "You have been logged out" });
         }
-        return res.status(204);
     } catch(e: any) {
         console.log(e);
         return res.status(500).json(e.errors);

@@ -7,6 +7,7 @@ import { connect, close } from "../../__tests__/db";
 describe("Authentication with JWT", function () {
 
 	var access_token: any;
+	var refresh_token: any;
 
 	before( done => {
 		connect()
@@ -131,7 +132,7 @@ describe("Authentication with JWT", function () {
 					.post("/auth/login")
 					.send({ username: "basic01@gmail.com", password: "S3an1234" })
 					.then((res: any) => {
-						// TODO: Get refresh token as well
+						refresh_token = res.headers["set-cookie"]; // Contains refresh token in "set-cookie"
 						const status = res.statusCode;
 						const body = res.body;
 						access_token = res.body["accessToken"] || null;
@@ -208,36 +209,6 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	// describe("POST /auth/logout", function () {
-	// 	describe("Logout with valid refresh token", function () {
-	// 		it("Responds with status 204", function (done) {
-	// 			request(app)
-	// 				.post("/auth/logout")
-	// 				.then((res: any) => {
-	// 					const status = res.statusCode;
-	// 					expect(status).to.equal(204);
-	// 					done();
-	// 				})
-	// 				.catch((err: any) => done(err));
-	// 		});
-	// 	})
-
-	// 	describe("Logout w/ invalid refresh token", function () {
-	// 		it("Responds with error message", function (done) {
-	// 			request(app)
-	// 				.post("/auth/logout")
-	// 				.then((res: any) => {
-	// 					const status = res.statusCode;
-	// 					const body = res.body;
-	// 					expect(status).to.equal(400);
-	// 					expect(body).to.be.property("error");
-	// 					done();
-	// 				})
-	// 				.catch((err: any) => done(err));
-	// 		});
-	// 	})
-	// })
-
 	describe("GET /user", function () {
 		it("Responds with User Info", function (done) {
 			request(app)
@@ -282,6 +253,38 @@ describe("Authentication with JWT", function () {
 				})
 				.catch((err: any) => done(err));
 		});
+	})
+
+	describe("POST /auth/logout", function () {
+		describe("Logout w/ invalid refresh token", function () {
+			it("Responds with error message", function (done) {
+				request(app)
+					.delete("/auth/logout")
+					.set("Cookie", "refreshToken=invalidTokenValue;")
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(400);
+						expect(body).to.be.property("error");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+		
+		describe("Logout with valid refresh token", function () {
+			it("Responds with status 204", function (done) {
+				request(app)
+				.delete("/auth/logout")
+				.set("Cookie", refresh_token)
+				.then((res: any) => {
+					const status = res.statusCode;
+					expect(status).to.equal(204);
+					done();
+				})
+				.catch((err: any) => done(err));
+			});
+		})
 	})
 
 	describe("DELETE /user", function () {

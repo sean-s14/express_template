@@ -73,7 +73,7 @@ app.use("/items", ItemsRoutes);
 
 // =============== LISTENER ===============
 if (env.NODE_ENV === 'test') {
-    app.listen(env.PORT, () => {});
+    app.listen(env.TEST_PORT, () => {});
 } else {
     https.createServer(credentials, app).listen(env.PORT, () => 
         console.log(`Listening at https://localhost:${env.PORT}`));
