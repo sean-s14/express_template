@@ -9,29 +9,17 @@ import { User as UserModel } from "../schemas/user";
 
 describe("Authentication with JWT", function () {
 
-	var basic01: any = {
-		access_token: "",
-		refresh_token: "",
-		username: "",
+	interface TestUser {
+		access_token?: string,
+		refresh_token?: string,
+		username?: string,
+		id?: string,
 	}
 
-	var basic02: any = {
-		access_token: "",
-		refresh_token: "",
-		username: "",
-	}
-
-	var admin01: any = {
-		access_token: "",
-		refresh_token: "",
-		username: "",
-	}
-
-	var super01: any = {
-		access_token: "",
-		refresh_token: "",
-		username: "",
-	}
+	var basic01: TestUser = {};
+	var basic02: TestUser = {};
+	var admin01: TestUser = {};
+	var super01: TestUser = {};
 
 	before( done => {
 		connect()
@@ -52,7 +40,7 @@ describe("Authentication with JWT", function () {
 						password: passwordHash,
 					})
 					await basic.save().then( doc => {
-						basic01.username = doc.username;
+						basic01.username = doc.username.toString();
 					}).catch( err => console.log(err));
 				}
 
@@ -64,7 +52,7 @@ describe("Authentication with JWT", function () {
 						password: passwordHash,
 					})
 					await admin.save().then( doc => {
-						admin01.username = doc.username;
+						admin01.username = doc.username.toString();
 					}).catch( err => console.log(err));
 				}
 
@@ -76,7 +64,7 @@ describe("Authentication with JWT", function () {
 						password: passwordHash,
 					})
 					await superuser.save().then( doc => {
-						super01.username = doc.username;
+						super01.username = doc.username.toString();
 					}).catch( err => console.log(err));
 				}
 
@@ -362,14 +350,15 @@ describe("Authentication with JWT", function () {
 						const status = res.statusCode;
 						const body = res.body;
 						basic01.username = body?.username;
+						basic01.id = body?._id.toString();
 						expect(status).to.equal(200);
-						expect(body).to.be.property("verified");
-						expect(body).to.be.property("_id");
-						expect(body).to.be.property("role");
-						expect(body).to.be.property("username");
-						expect(body).to.be.property("email");
-						expect(body).to.be.property("createdAt");
-						expect(body).to.be.property("updatedAt");
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("updatedAt");
 						done();
 					})
 					.catch((err: any) => done(err));
@@ -385,14 +374,238 @@ describe("Authentication with JWT", function () {
 						const status = res.statusCode;
 						const body = res.body;
 						basic02.username = body?.username;
+						basic02.id = body?._id.toString();
 						expect(status).to.equal(200);
-						expect(body).to.be.property("verified");
-						expect(body).to.be.property("_id");
-						expect(body).to.be.property("role");
-						expect(body).to.be.property("username");
-						expect(body).to.be.property("email");
-						expect(body).to.be.property("createdAt");
-						expect(body).to.be.property("updatedAt");
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("updatedAt");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("w/ accessToken (admin01)", function() {
+			it("Responds with user info", function (done) {
+				request(app)
+					.get("/user")
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						admin01.username = body?.username;
+						admin01.id = body?._id.toString();
+						expect(status).to.equal(200);
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("updatedAt");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("w/ accessToken (super01)", function() {
+			it("Responds with user info", function (done) {
+				request(app)
+					.get("/user")
+					.set("Authorization", `Bearer ${super01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						super01.username = body?.username;
+						super01.id = body?._id.toString();
+						expect(status).to.equal(200);
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("updatedAt");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+	})
+
+	describe("GET /users", function () {
+		describe("as basic01", function () {
+			it("Responds with list of users containing only username and createdAt properties", function (done) {
+				request(app)
+					.get("/users")
+					.set("Authorization", `Bearer ${basic01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						const user = body[0];
+						expect(status).to.equal(200);
+						expect(user).to.have.property("username");
+						expect(user).to.have.property("createdAt");
+						expect(user).to.have.property("_id");
+						expect(user).to.not.have.property("email");
+						expect(user).to.not.have.property("password");
+						expect(user).to.not.have.property("verified");
+						expect(user).to.not.have.property("role");
+						expect(user).to.not.have.property("updatedAt");
+						expect(user).to.not.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("as admin01", function () {
+			it("Responds with list of users containing all properties", function (done) {
+				request(app)
+					.get("/users")
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						const user = body[0];
+						expect(status).to.equal(200);
+						expect(user).to.have.property("username");
+						expect(user).to.have.property("createdAt");
+						expect(user).to.have.property("email");
+						expect(user).to.have.property("password");
+						expect(user).to.have.property("verified");
+						expect(user).to.have.property("role");
+						expect(user).to.have.property("_id");
+						expect(user).to.have.property("updatedAt");
+						expect(user).to.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("as super01", function () {
+			it("Responds with list of users containing all properties", function (done) {
+				request(app)
+					.get("/users")
+					.set("Authorization", `Bearer ${super01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						const user = body[0];
+						expect(status).to.equal(200);
+						expect(user).to.have.property("username");
+						expect(user).to.have.property("createdAt");
+						expect(user).to.have.property("email");
+						expect(user).to.have.property("password");
+						expect(user).to.have.property("verified");
+						expect(user).to.have.property("role");
+						expect(user).to.have.property("_id");
+						expect(user).to.have.property("updatedAt");
+						expect(user).to.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+	})
+	
+	describe("GET /users/:id", function () {
+		describe("get basic01 as basic01", function () {
+			it("Responds with all of the users properties", function (done) {
+				request(app)
+					.get(`/users/${basic01.id}`)
+					.set("Authorization", `Bearer ${basic01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("password");
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("updatedAt");
+						expect(body).to.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("get basic01 as basic02", function () {
+			it("Responds with the specified users _id, username & createdAt properties", function (done) {
+				request(app)
+					.get(`/users/${basic01.id}`)
+					.set("Authorization", `Bearer ${basic02.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("_id");
+						expect(body).to.not.have.property("email");
+						expect(body).to.not.have.property("password");
+						expect(body).to.not.have.property("verified");
+						expect(body).to.not.have.property("role");
+						expect(body).to.not.have.property("updatedAt");
+						expect(body).to.not.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("get basic01 as admin01", function () {
+			it("Responds with all of the users properties", function (done) {
+				request(app)
+					.get(`/users/${basic01.id}`)
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("password");
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("updatedAt");
+						expect(body).to.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("get basic01 as super01", function () {
+			it("Responds with all of the users properties", function (done) {
+				request(app)
+					.get(`/users/${basic01.id}`)
+					.set("Authorization", `Bearer ${super01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("password");
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("updatedAt");
+						expect(body).to.have.property("__v");
 						done();
 					})
 					.catch((err: any) => done(err));
@@ -619,7 +832,7 @@ describe("Authentication with JWT", function () {
 			it("Responds with new access token", function (done) {
 				request(app)
 					.post("/auth/refresh")
-					.set("Cookie", basic01.refresh_token)
+					.set("Cookie", basic01.refresh_token!)
 					.then((res: any) => {
 						const status = res.statusCode;
 						const body = res.body;
@@ -654,14 +867,14 @@ describe("Authentication with JWT", function () {
 		describe("Logout with valid refresh token", function () {
 			it("Responds with status 204", function (done) {
 				request(app)
-				.delete("/auth/logout")
-				.set("Cookie", basic01.refresh_token)
-				.then((res: any) => {
-					const status = res.statusCode;
-					expect(status).to.equal(204);
-					done();
-				})
-				.catch((err: any) => done(err));
+					.delete("/auth/logout")
+					.set("Cookie", basic01.refresh_token!)
+					.then((res: any) => {
+						const status = res.statusCode;
+						expect(status).to.equal(204);
+						done();
+					})
+					.catch((err: any) => done(err));
 			});
 		})
 	})

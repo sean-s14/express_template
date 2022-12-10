@@ -3,7 +3,7 @@ const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
 import { authenticateToken, checkPermissions } from "../../../middleware/auth";
-import { isAdmin, isOwnerOrAdmin } from "../../../permissions/auth";
+import { isAdmin, isOwnerOrAdmin, isOwnerOrSuperuser, isSuperuser } from "../../../permissions/auth";
 import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
 
@@ -33,14 +33,20 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
     try {
         if (isOwnerOrAdmin(user, userId)) {
             const userObj = await UserSchema.findById(userId);
+            if (userObj === null) {
+                return res.status(404).json({ [MSG_TYPES.ERROR]: "Could not find user with specified ID" });
+            }
             return res.status(200).json(userObj);
         } else {
             const userObj = await UserSchema.findById(userId, "username createdAt");
+            if (userObj === null) {
+                return res.status(404).json({ [MSG_TYPES.ERROR]: "Could not find user with specified ID" });
+            }
             return res.status(200).json(userObj);
         }
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.errors);
+        return res.status(500).json(e.message);
     }
 });
 
@@ -63,7 +69,7 @@ router.patch("/:id", authenticateToken, checkPermissions, async (req: Request, r
         return res.status(200).json(userObj);
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.errors);
+        return res.status(500).json(e.message);
     }
 });
 
@@ -77,16 +83,35 @@ router.delete("/:id", authenticateToken, async (req: Request, res: express.Respo
     }
 
     try {
-        const userObj = await UserSchema.findOneAndDelete({ username: user?.username });
+        const userObj = await UserSchema.findById(userId);
         if (userObj === null) {
-            return res.status(400).json(
-                { [MSG_TYPES.ERROR]: `The account with username ${user?.username} does not exist` }
+            return res.status(404).json(
+                { [MSG_TYPES.ERROR]: `The account with ID ${userId} does not exist` }
             );
+        } else {
+            if (isSuperuser(userObj)) {
+                if (isSuperuser(user)) {
+                    await UserSchema.findByIdAndDelete(userId);
+                } else {
+                    res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER})
+                }
+            } else if (isAdmin(userObj)) {
+                if (isOwnerOrSuperuser(user, userId)) {
+                    await UserSchema.findByIdAndDelete(userId);
+                } else {
+                    res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_OWNER})
+                }
+            } else {
+                await UserSchema.findByIdAndDelete(userId);
+            }
         }
-        return res.status(200).json({ [MSG_TYPES.SUCCESS]: "Your account has successfully been deleted" });
+
+        return res.status(200).json(
+            { [MSG_TYPES.SUCCESS]: `The account with ID ${userId} has been successfully been deleted` }
+        );
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.errors);
+        return res.status(500).json(e.message);
     }
 });
 
