@@ -1,8 +1,11 @@
 import { expect } from "chai";
 import request from "supertest";
+import bcrypt from "bcrypt";
 
 import { app } from "../../../app";
 import { connect, close } from "../../__tests__/db";
+import { User as UserModel } from "../schemas/user";
+
 
 describe("Authentication with JWT", function () {
 
@@ -18,34 +21,80 @@ describe("Authentication with JWT", function () {
 		username: "",
 	}
 
+	var admin01: any = {
+		access_token: "",
+		refresh_token: "",
+		username: "",
+	}
+
+	var super01: any = {
+		access_token: "",
+		refresh_token: "",
+		username: "",
+	}
+
 	before( done => {
 		connect()
-			.then(() => done())
+			.then( async () => {
+
+				let passwordHash;
+
+				{ // ========== CREATE PASSWORD HASH ==========
+					var salt = bcrypt.genSaltSync(13)
+					passwordHash = await bcrypt.hash("S3an1234", salt);
+				}
+
+				{ // ===== CREATE BASIC USER =====
+					const basic = new UserModel({
+						role: "basic",
+						email: "basic01@gmail.com",
+						username: "basic01",
+						password: passwordHash,
+					})
+					await basic.save().then( doc => {
+						basic01.username = doc.username;
+					}).catch( err => console.log(err));
+				}
+
+				{ // ===== CREATE ADMIN USER =====
+					const admin = new UserModel({
+						role: "admin",
+						email: "admin01@gmail.com",
+						username: "admin01",
+						password: passwordHash,
+					})
+					await admin.save().then( doc => {
+						admin01.username = doc.username;
+					}).catch( err => console.log(err));
+				}
+
+				{ // ===== CREATE SUPER USER =====
+					const superuser = new UserModel({
+						role: "superuser",
+						email: "super01@gmail.com",
+						username: "super01",
+						password: passwordHash,
+					})
+					await superuser.save().then( doc => {
+						super01.username = doc.username;
+					}).catch( err => console.log(err));
+				}
+
+				done()
+			})
 			.catch((err) => done(err));
 	})
 
 	after( done => {
 		close()
-			.then(() => done())
+			.then( async () => {
+				// TODO: Clear "test" database
+				done();
+			})
 			.catch((err) => done(err));
 	})
 	
 	describe("POST /auth/signup", function () {
-		describe("Signup w/ valid credentials (basic01)", function () {
-			it("Responds with success message", function (done) {
-				request(app)
-					.post("/auth/signup")
-					.send({ email: "basic01@gmail.com", password: "S3an1234", password2: "S3an1234" })
-					.then((res: any) => {
-						const status = res.statusCode;
-						const body = res.body;
-						expect(status).to.equal(201);
-						expect(body).to.be.property("success");
-						done();
-					})
-					.catch((err: any) => done(err));
-			});
-		})
 
 		describe("Signup w/ valid credentials (basic02)", function () {
 			it("Responds with success message", function (done) {
@@ -187,6 +236,42 @@ describe("Authentication with JWT", function () {
 			});
 		})
 
+		describe("Login with valid credentials (admin01)", function () {
+			it("Responds with access token", function (done) {
+				request(app)
+					.post("/auth/login")
+					.send({ username: "admin01@gmail.com", password: "S3an1234" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						admin01.access_token = res.body["accessToken"] || null;
+						admin01.refresh_token = res.headers["set-cookie"]; // Contains refresh token in "set-cookie"
+						expect(status).to.equal(200);
+						expect(body).to.be.property("accessToken");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("Login with valid credentials (super01)", function () {
+			it("Responds with access token", function (done) {
+				request(app)
+					.post("/auth/login")
+					.send({ username: "super01@gmail.com", password: "S3an1234" })
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						super01.access_token = res.body["accessToken"] || null;
+						super01.refresh_token = res.headers["set-cookie"]; // Contains refresh token in "set-cookie"
+						expect(status).to.equal(200);
+						expect(body).to.be.property("accessToken");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
 		describe("Login w/o password", function () {
 			it("Responds with error message", function (done) {
 				request(app)
@@ -253,7 +338,22 @@ describe("Authentication with JWT", function () {
 	})
 
 	describe("GET /user", function () {
-		describe("Using accessToken (basic01)", function() {
+		describe("w/o accessToken", function() {
+			it("Responds with error message", function (done) {
+				request(app)
+					.get("/user")
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(401);
+						expect(body).to.be.property("error");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("w/ accessToken (basic01)", function() {
 			it("Responds with user info", function (done) {
 				request(app)
 					.get("/user")
@@ -276,7 +376,7 @@ describe("Authentication with JWT", function () {
 			});
 		})
 
-		describe("Using accessToken (basic02)", function() {
+		describe("w/ accessToken (basic02)", function() {
 			it("Responds with user info", function (done) {
 				request(app)
 					.get("/user")
@@ -413,8 +513,124 @@ describe("Authentication with JWT", function () {
 				});
 			})
 
-			// TODO: describe("admin", function() {});
-			// TODO: describe("superuser", function() {});
+			describe("admin", function() {
+				it("Responds with error message", function (done) {
+					request(app)
+					.patch("/user")
+					.send({ role: "superuser" })
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(403);
+						expect(body).to.be.property("error");
+						done();
+					})
+					.catch((err: any) => done(err));
+				});
+			});
+
+			describe("superuser", function() {
+				it("Responds with success message", function (done) {
+					request(app)
+					.patch("/user")
+					.send({ role: "superuser" })
+					.set("Authorization", `Bearer ${super01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						done();
+					})
+					.catch((err: any) => done(err));
+				});
+			});
+		})
+		
+		describe("Modify \"verified\" as-", function() {
+			describe("basic user", function() {
+				it("Responds with error message", function (done) {
+					request(app)
+					.patch("/user")
+					.send({ verified: true })
+					.set("Authorization", `Bearer ${basic01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(403);
+						expect(body).to.be.property("error");
+						done();
+					})
+					.catch((err: any) => done(err));
+				});
+			})
+
+			describe("admin", function() {
+				it("Responds with success message", function (done) {
+					request(app)
+					.patch("/user")
+					.send({ verified: true })
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						done();
+					})
+					.catch((err: any) => done(err));
+				});
+			});
+
+			describe("superuser", function() {
+				it("Responds with success message", function (done) {
+					request(app)
+					.patch("/user")
+					.send({ verified: true })
+					.set("Authorization", `Bearer ${super01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						done();
+					})
+					.catch((err: any) => done(err));
+				});
+			});
+		})
+	})
+
+	describe("POST /auth/refresh", function () {
+		describe("w/o refreshToken", function () {
+			it("Responds with new access token", function (done) {
+				request(app)
+					.post("/auth/refresh")
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(401);
+						expect(body).to.be.property("error");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("w/ refreshToken (basic01)", function () {
+			it("Responds with new access token", function (done) {
+				request(app)
+					.post("/auth/refresh")
+					.set("Cookie", basic01.refresh_token)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						basic01.access_token = body["accessToken"] || null;
+						basic01.refresh_token = res.headers["set-cookie"]; // Contains refresh token in "set-cookie"
+						expect(status).to.equal(200);
+						expect(body).to.be.property("accessToken");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
 		})
 	})
 
@@ -450,20 +666,70 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("DELETE /user", function () {
-		it("Responds with success message", function (done) {
-			request(app)
-				.delete("/user")
-				.set("Authorization", `Bearer ${basic01.access_token}`)
-				.then((res: any) => {
-					const status = res.statusCode;
-					const body = res.body;
-					expect(status).to.equal(200);
-					expect(body).to.be.property("success");
-					done();
-				})
-				.catch((err: any) => done(err));
-		});
+	describe("DELETE /user as-", function () {
+		describe("basic01", function() {
+			it("Responds with success message", function (done) {
+				request(app)
+					.delete("/user")
+					.set("Authorization", `Bearer ${basic01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.be.property("success");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("basic02", function() {
+			it("Responds with success message", function (done) {
+				request(app)
+					.delete("/user")
+					.set("Authorization", `Bearer ${basic02.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.be.property("success");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("admin01", function() {
+			it("Responds with success message", function (done) {
+				request(app)
+					.delete("/user")
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.be.property("success");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("super01", function() {
+			it("Responds with success message", function (done) {
+				request(app)
+					.delete("/user")
+					.set("Authorization", `Bearer ${super01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.be.property("success");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
 	})
 
 })

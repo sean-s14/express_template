@@ -6,8 +6,8 @@ import express from "express";
 const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
+import { Token as TokenModel } from "../../../schemas/token";
 import { authenticateToken, checkPermissions } from "../../../middleware/auth";
-import { isAdmin, isSuperuser } from "../../../permissions/auth";
 import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
 
@@ -80,23 +80,17 @@ router.patch("/", authenticateToken, checkPermissions, async (req: Request, res:
 // ========== DELETE USER ==========
 router.delete("/", authenticateToken, async (req: Request, res: any) => {
     const { user } = req;
-    const username = user?.username;
     const email = user?.email;
 
     try {
-        if (username) {
-            const userObj = await UserSchema.findOneAndDelete({ username: username });
-            if (userObj === null) {
-                return res.status(400).json(
-                    { [MSG_TYPES.ERROR]: `The account with username ${username} does not exist` }
-                );
-            }
-        } else if (email) {
+        if (email) {
             const userObj = await UserSchema.findOneAndDelete({ email: email });
             if (userObj === null) {
                 return res.status(400).json(
                     { [MSG_TYPES.ERROR]: `The account with email ${email} does not exist` }
                 );
+            } else {
+                await TokenModel.findOneAndDelete({ user: userObj._id });
             }
         } else {
             return res.status(400).json({ [MSG_TYPES.ERROR]: "There was no username or email attached to access token" });

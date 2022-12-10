@@ -5,16 +5,19 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { Request } from "../method/jwt/types";
 import { isAdmin, isSuperuser } from "../permissions/auth";
-import { MSG_TYPES, ERRORS } from "../utils/logging";
+import { MSG_TYPES, ERRORS, log } from "../utils/logging";
 
 
 function authenticateToken(req: Request, res: express.Response, next: Function) {
     const { authorization: authHeader } = req.headers;
     const token = authHeader && authHeader.split(" ")[1];
-    if (token == null) return res.status(401).json({ err: "No access token was received" });
+    if (token == null) return res.status(401).json({ [MSG_TYPES.ERROR]: "No access token was received" });
 
     jwt.verify(token, env.ACCESS_TOKEN_SECRET, (err: any, user: any) => {
-        if (err) return res.status(403).json({ err: "Access token could not be verified" });
+        if (err) {
+            log(err);
+            return res.status(403).json({ [MSG_TYPES.ERROR]: "Access token could not be verified" });
+        }
         req.user = user
         next();
     });

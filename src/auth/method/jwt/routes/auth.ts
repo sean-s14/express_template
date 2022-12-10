@@ -183,9 +183,15 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
     jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET, async (err: any, user: any) => {
         if (err) return res.status(403).json({ [MSG_TYPES.ERROR]: "Refresh token is either invalid or has expired" });
 
+        const new_user = { 
+            email: user.email, 
+            username: user.username, 
+            id: user._id, 
+            role: user.role
+        }
         // ===== GENERATE ACCESS & REFRESH TOKENS ===== 
-        const accessToken = generateAccessToken({ username: user.username });
-        const newRefreshToken = generateRefreshToken({ username: user.username });
+        const accessToken = generateAccessToken(new_user);
+        const newRefreshToken = generateRefreshToken(new_user);
 
         try { // ===== UPDATE TOKENS IN DB =====
             const token = await TokenSchema.findOneAndUpdate(
@@ -199,7 +205,7 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
 
         res.cookie("refreshToken", newRefreshToken, { httpOnly: true, signed: true, secure: true });
 
-        return res.json({ accessToken: accessToken });
+        return res.status(200).json({ accessToken: accessToken });
     })
 })
 
