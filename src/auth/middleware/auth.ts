@@ -16,7 +16,7 @@ function authenticateToken(req: Request, res: express.Response, next: Function) 
     jwt.verify(token, env.ACCESS_TOKEN_SECRET, (err: any, user: any) => {
         if (err) {
             log(err);
-            return res.status(403).json({ [MSG_TYPES.ERROR]: "Access token could not be verified" });
+            return res.status(401).json({ [MSG_TYPES.ERROR]: "Access token could not be verified" });
         }
         req.user = user
         next();
@@ -28,12 +28,12 @@ function checkPermissions(req: Request, res: express.Response, next: Function) {
     if (body) {
         if (req.method !== "GET") {
             if (body.hasOwnProperty("role") && !isSuperuser(user)) {
-                return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER });
+                return res.status(401).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER });
             }
             if (body.hasOwnProperty(
                 "verified" || "createdAt" || "updatedAt" || "_id" || "__v" || "googleId"
                 ) && !isAdmin(user)) {
-                return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN });
+                return res.status(401).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN });
             }
         }
     }

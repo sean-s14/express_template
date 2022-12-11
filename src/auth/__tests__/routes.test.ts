@@ -17,13 +17,24 @@ let RESPONSES: any = {
 	SERVER_ERROR: "500 server error",
 }
 
-function prependResponse() {
-	for (let [key, val] of Object.entries(RESPONSES)) {
-		RESPONSES[key] = "Response: " + val;
-	}
-}
+RESPONSES = Object.fromEntries(Object.entries(RESPONSES).map( arr => {
+    arr[1] = `Response: ${arr[1]}`;
+    return arr;
+}))
 
-prependResponse();
+let ROUTES: any = {
+	SIGNUP: "POST /auth/signup",
+	LOGIN: "POST /auth/login",
+	REFRESH: "POST /auth/refresh",
+	LOGOUT: "DELETE /auth/logout",
+	GET_USER: "GET /user",
+	UPDATE_USER: "PATCH /user",
+	DELETE_USER: "DELETE /user",
+	GET_ALL_USERS: "GET /users",
+	GET_USER_BY_ID: "GET /users/:id",
+	UPDATE_USER_BY_ID: "PATCH /users/:id",
+	DELETE_USER_BY_ID: "DELETE /users/:id",
+}
 
 
 describe("Authentication with JWT", function () {
@@ -150,7 +161,7 @@ describe("Authentication with JWT", function () {
 			.catch((err) => done(err));
 	})
 	
-	describe("POST /auth/signup", function () {
+	describe(ROUTES.SIGNUP, function () {
 
 		describe("Signup w/ valid credentials (basic02)", function () {
 			it(RESPONSES.SUCCESS, function (done) {
@@ -255,7 +266,7 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("POST /auth/login", function () {
+	describe(ROUTES.LOGIN, function () {
 		describe("Login with valid credentials (basic01)", function () {
 			it("Response: 200 + accessToken + refreshToken (in cookie)", function (done) {
 				request(app)
@@ -447,9 +458,9 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("GET /user", function () {
+	describe(ROUTES.GET_USER, function () {
 		describe("w/o accessToken", function() {
-			it("Responds with error message", function (done) {
+			it(RESPONSES.UNAUTHORIZED, function (done) {
 				request(app)
 					.get("/user")
 					.then((res: any) => {
@@ -536,7 +547,7 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("GET /users", function () {
+	describe(ROUTES.GET_ALL_USERS, function () {
 		describe("as basic01", function () {
 			it("Responds with list of users containing only username and createdAt properties", function (done) {
 				request(app)
@@ -613,7 +624,7 @@ describe("Authentication with JWT", function () {
 		})
 	})
 	
-	describe("GET /users/:id", function () {
+	describe(ROUTES.GET_USER_BY_ID, function () {
 		describe("get basic01 as basic01", function () {
 			it("Responds with all of the users properties", function (done) {
 				request(app)
@@ -710,8 +721,96 @@ describe("Authentication with JWT", function () {
 			});
 		})
 	})
+	
+	describe(ROUTES.UPDATE_USER_BY_ID, function () {
+		describe("update basic03 as basic01", function () {
+			it(RESPONSES.UNAUTHORIZED, function (done) {
+				request(app)
+					.patch(`/users/${basic03.id}`)
+					.send({ firstName: "Random" })
+					.set("Authorization", `Bearer ${basic01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(401);
+						expect(body).to.have.property("error");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
 
-	describe("PATCH /user", function () {
+		describe("update basic03 as admin01", function () {
+			it(RESPONSES.SUCCESS, function (done) {
+				request(app)
+					.patch(`/users/${basic03.id}`)
+					.send({ firstName: "Random" })
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.have.property("firstName");
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("password");
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("updatedAt");
+						expect(body).to.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("update admin02 as admin01", function () {
+			it(RESPONSES.UNAUTHORIZED, function (done) {
+				request(app)
+					.patch(`/users/${admin02.id}`)
+					.send({ firstName: "Random" })
+					.set("Authorization", `Bearer ${admin01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(401);
+						expect(body).to.have.property("error");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+
+		describe("update admin02 as super01", function () {
+			it(RESPONSES.SUCCESS, function (done) {
+				request(app)
+					.patch(`/users/${admin02.id}`)
+					.send({ firstName: "Random" })
+					.set("Authorization", `Bearer ${super01.access_token}`)
+					.then((res: any) => {
+						const status = res.statusCode;
+						const body = res.body;
+						expect(status).to.equal(200);
+						expect(body).to.have.property("firstName");
+						expect(body).to.have.property("username");
+						expect(body).to.have.property("createdAt");
+						expect(body).to.have.property("_id");
+						expect(body).to.have.property("email");
+						expect(body).to.have.property("password");
+						expect(body).to.have.property("verified");
+						expect(body).to.have.property("role");
+						expect(body).to.have.property("updatedAt");
+						expect(body).to.have.property("__v");
+						done();
+					})
+					.catch((err: any) => done(err));
+			});
+		})
+	})
+
+	describe(ROUTES.UPDATE_USER, function () {
 		
 		describe("Modify \"firstName\"", function() {	
 			it("Responds with user info", function (done) {
@@ -910,7 +1009,7 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("POST /auth/refresh", function () {
+	describe(ROUTES.REFRESH, function () {
 		describe("w/o refreshToken", function () {
 			it("Responds with new access token", function (done) {
 				request(app)
@@ -945,7 +1044,7 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("POST /auth/logout", function () {
+	describe(ROUTES.LOGOUT, function () {
 		describe("Logout w/ invalid refresh token", function () {
 			it(RESPONSES.BAD_REQUEST, function (done) {
 				request(app)
@@ -977,7 +1076,7 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("DELETE /users/:id", function () {
+	describe(ROUTES.DELETE_USER_BY_ID, function () {
 		describe("delete basic03 as basic01", function () {
 			it(RESPONSES.UNAUTHORIZED, function (done) {
 				request(app)
@@ -1059,7 +1158,7 @@ describe("Authentication with JWT", function () {
 		})
 	})
 
-	describe("DELETE /user as-", function () {
+	describe(ROUTES.DELETE_USER, function () {
 		describe("basic01", function() {
 			it(RESPONSES.SUCCESS, function (done) {
 				request(app)

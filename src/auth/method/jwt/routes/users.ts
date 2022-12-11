@@ -1,11 +1,34 @@
 import express from "express";
 const router = express.Router();
 
-import { User as UserSchema } from "../../../schemas/user";
+import { User as UserModel, IUser } from "../../../schemas/user";
 import { authenticateToken, checkPermissions } from "../../../middleware/auth";
 import { isAdmin, isUser, isOwnerOrAdmin, isOwnerOrSuperuser, isSuperuser } from "../../../permissions/auth";
 import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
+
+function isUserUnauthorized(user: any, userObj: IUser): (string | boolean)[] {
+    if (!isUser(user, userObj?._id.toString())) { 
+        // CLIENT IS NOT REQUESTED USER
+        if (isSuperuser(userObj)) { 
+            // REQUESTED USER IS A SUPERUSER
+            return [true, ERRORS.NOT_USER];
+        } else if (isAdmin(userObj)) { 
+            // REQUESTED USER IS AN ADMIN
+            if (!isSuperuser(user)) { 
+                // CLIENT IS NOT A SUPERUSER
+                return [true, ERRORS.NOT_OWNER];
+            }
+        } else { 
+            // REQUESTED USER IS A BASIC USER
+            if (!isAdmin(user)) { 
+                // CLIENT IS NOT AN ADMIN OR SUPERUSER
+                return [true, ERRORS.NOT_ADMIN_OR_OWNER];
+            }
+        }
+    }
+    return [false, "authorized"];
+}
 
 // ========== GET ALL USERS ==========
 router.get("/", authenticateToken, async (req: Request, res: express.Response) => {
@@ -13,10 +36,10 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
 
     try {
         if (isAdmin(user)) {
-            const allUsers = await UserSchema.find();
+            const allUsers = await UserModel.find();
             return res.status(200).json(allUsers);
         } else {
-            const allUsers = await UserSchema.find({}, "username createdAt");
+            const allUsers = await UserModel.find({}, "username createdAt");
             return res.status(200).json(allUsers);
         }
     } catch(e: any) {
@@ -32,13 +55,13 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
 
     try {
         if (isOwnerOrAdmin(user, userId)) {
-            const userObj = await UserSchema.findById(userId);
+            const userObj = await UserModel.findById(userId);
             if (userObj === null) {
                 return res.status(404).json({ [MSG_TYPES.ERROR]: "Could not find user with specified ID" });
             }
             return res.status(200).json(userObj);
         } else {
-            const userObj = await UserSchema.findById(userId, "username createdAt");
+            const userObj = await UserModel.findById(userId, "username createdAt");
             if (userObj === null) {
                 return res.status(404).json({ [MSG_TYPES.ERROR]: "Could not find user with specified ID" });
             }
@@ -56,17 +79,22 @@ router.patch("/:id", authenticateToken, checkPermissions, async (req: Request, r
     const userId = req.params.id;
     const update_options = { new: true, lean: true, runValidators: true }
 
-    if (!isOwnerOrAdmin(user, userId)) {
-        return res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN_OR_OWNER});
-    }
-
     try {
-        const userObj = await UserSchema.findOneAndUpdate(
-            { username: user?.username },
-            body,
-            update_options,
-        );
-        return res.status(200).json(userObj);
+        const userObj = await UserModel.findById(userId)
+        if (userObj === null) { 
+            // NOT FOUND
+            return res.status(404).json({ [MSG_TYPES.ERROR]: "Could not find user with specified ID" });
+        } else { 
+            // FOUND
+            let isAnauthorized = isUserUnauthorized(user, userObj); 
+            if (isAnauthorized[0]) {
+                return res.status(401).json({ [MSG_TYPES.ERROR]: isAnauthorized[1] });
+            }
+
+            const newUserObj = await UserModel.findByIdAndUpdate(userId, body, update_options);
+            return res.status(200).json(newUserObj);
+        }
+
     } catch(e: any) {
         log(e)
         return res.status(500).json(e.message);
@@ -78,37 +106,23 @@ router.delete("/:id", authenticateToken, async (req: Request, res: express.Respo
     const { user } = req;
     const userId = req.params.id;
 
-    if (!isOwnerOrAdmin(user, userId)) {
-        return res.status(403).send({ [MSG_TYPES.ERROR]: ERRORS.NOT_ADMIN_OR_OWNER });
-    }
-
     try {
-        const userObj = await UserSchema.findById(userId);
-        if (userObj === null) {
-            return res.status(404).json(
-                { [MSG_TYPES.ERROR]: `The account with ID ${userId} does not exist` }
-            );
-        } else {
-            if (isSuperuser(userObj)) {
-                if (isUser(user, userObj?._id.toString())) {
-                    await UserSchema.findByIdAndDelete(userId);
-                } else {
-                    res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_USER})
-                }
-            } else if (isAdmin(userObj)) {
-                if (isOwnerOrSuperuser(user, userId)) {
-                    await UserSchema.findByIdAndDelete(userId);
-                } else {
-                    res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_OWNER})
-                }
-            } else {
-                await UserSchema.findByIdAndDelete(userId);
+        const userObj = await UserModel.findById(userId);
+        if (userObj === null) { 
+            // NOT FOUND
+            return res.status(404).json({[MSG_TYPES.ERROR]:`The account with ID ${userId} does not exist`});
+        } else { 
+            // FOUND
+            let isAnauthorized = isUserUnauthorized(user, userObj); 
+            if (isAnauthorized[0]) {
+                return res.status(401).json({ [MSG_TYPES.ERROR]: isAnauthorized[1] });
             }
-        }
 
-        return res.status(200).json(
-            { [MSG_TYPES.SUCCESS]: `The account with ID ${userId} has been successfully been deleted` }
-        );
+            await UserModel.findByIdAndDelete(userId);
+            return res.status(200).json(
+                { [MSG_TYPES.SUCCESS]: `The account with ID ${userId} has been successfully been deleted` }
+            );
+        }
     } catch(e: any) {
         log(e)
         return res.status(500).json(e.message);
