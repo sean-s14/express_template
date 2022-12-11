@@ -3,7 +3,7 @@ const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
 import { authenticateToken, checkPermissions } from "../../../middleware/auth";
-import { isAdmin, isOwnerOrAdmin, isOwnerOrSuperuser, isSuperuser } from "../../../permissions/auth";
+import { isAdmin, isUser, isOwnerOrAdmin, isOwnerOrSuperuser, isSuperuser } from "../../../permissions/auth";
 import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
 
@@ -90,10 +90,10 @@ router.delete("/:id", authenticateToken, async (req: Request, res: express.Respo
             );
         } else {
             if (isSuperuser(userObj)) {
-                if (isSuperuser(user)) {
+                if (isUser(user, userObj?._id.toString())) {
                     await UserSchema.findByIdAndDelete(userId);
                 } else {
-                    res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_SUPERUSER})
+                    res.status(403).json({ [MSG_TYPES.ERROR]: ERRORS.NOT_USER})
                 }
             } else if (isAdmin(userObj)) {
                 if (isOwnerOrSuperuser(user, userId)) {

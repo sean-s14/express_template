@@ -111,7 +111,7 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
 
     try { // ===== VALIDATE PASSWORD ===== 
         var isValid = await bcrypt.compare(password, user.password || '');
-        if (!isValid) return res.status(403).json({ password: "Password entered is invalid" });
+        if (!isValid) return res.status(400).json({ password: "Password entered is invalid" });
     } catch (e: any) {
         log(e);
         return res.status(500).json({ password: "There was an issue validating the password" });
@@ -174,14 +174,14 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
 
     try { // ===== FIND REFRESH TOKEN IN DATABASE =====
         const refreshTokenInDB = await TokenSchema.findOne({ refresh_token: refreshToken });
-        if (!refreshTokenInDB) return res.status(403).json({ [MSG_TYPES.ERROR]: "Could not find refresh token in database" });
+        if (!refreshTokenInDB) return res.status(404).json({ [MSG_TYPES.ERROR]: "Could not find refresh token in database" });
     } catch (e: any) {
         log(e);
         return res.json({ [MSG_TYPES.ERROR]: "There was an error attempting to find refresh token in the database"})
     }
 
     jwt.verify(refreshToken, env.REFRESH_TOKEN_SECRET, async (err: any, user: any) => {
-        if (err) return res.status(403).json({ [MSG_TYPES.ERROR]: "Refresh token is either invalid or has expired" });
+        if (err) return res.status(401).json({ [MSG_TYPES.ERROR]: "Refresh token is either invalid or has expired" });
 
         const new_user = { 
             email: user.email, 

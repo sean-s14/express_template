@@ -9,6 +9,7 @@ function log(msg: string) {
 }
 
 const ERRORS = {
+    NOT_USER: "Only the owner of this account can perform this action",
     NOT_OWNER: "Only the owner or a superuser can perform this action",
     NOT_ADMIN: "Only an administrator or a superuser can perform this action",
     NOT_SUPERUSER: "Only a superuser can perform this action",

@@ -11,6 +11,10 @@ interface IItem {
     userId: mongoose.Types.ObjectId,
 }
 
+function isUser(user: IUser | undefined, userId: string) {
+    return (user?.id === userId);
+}
+
 function isOwner(user: IUser | undefined, item: IItem) {
     return (user?.id === item?.userId?.toString());
 };
@@ -48,6 +52,7 @@ function isOwnerOfObjOrSuperuser(user: IUser | undefined, item: IItem) {
 };
 
 export {
+    isUser,
     isOwner,
     isAdmin,
     isSuperuser,

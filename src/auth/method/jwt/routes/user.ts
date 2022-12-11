@@ -86,7 +86,7 @@ router.delete("/", authenticateToken, async (req: Request, res: any) => {
         if (email) {
             const userObj = await UserSchema.findOneAndDelete({ email: email });
             if (userObj === null) {
-                return res.status(400).json(
+                return res.status(404).json(
                     { [MSG_TYPES.ERROR]: `The account with email ${email} does not exist` }
                 );
             } else {
