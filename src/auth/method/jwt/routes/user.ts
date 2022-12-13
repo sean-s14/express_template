@@ -7,7 +7,7 @@ const router = express.Router();
 
 import { User as UserSchema } from "../../../schemas/user";
 import { Token as TokenModel } from "../../../schemas/token";
-import { authenticateToken, checkPermissions } from "../../../middleware/auth";
+import { authenticateToken, checkAuthPermissions } from "../../../middleware/auth";
 import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
 
@@ -43,7 +43,7 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
 });
 
 // ========== UPDATE USER ==========
-router.patch("/", authenticateToken, checkPermissions, async (req: Request, res: express.Response) => {
+router.patch("/", authenticateToken, checkAuthPermissions, async (req: Request, res: express.Response) => {
     const { user, body } = req;
     const username = user?.username;
     const email = user?.email;

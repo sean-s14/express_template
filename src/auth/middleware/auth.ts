@@ -23,7 +23,7 @@ function authenticateToken(req: Request, res: express.Response, next: Function) 
     });
 }
 
-function checkPermissions(req: Request, res: express.Response, next: Function) {
+function checkAuthPermissions(req: Request, res: express.Response, next: Function) {
     const { body, user } = req;
     if (body) {
         if (req.method !== "GET") {
@@ -40,4 +40,4 @@ function checkPermissions(req: Request, res: express.Response, next: Function) {
     next();
 }
 
-export { authenticateToken, checkPermissions };
+export { authenticateToken, checkAuthPermissions };

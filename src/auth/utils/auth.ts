@@ -27,14 +27,14 @@ interface IUserNameAndEmail extends IUserBase {
     email: string;
 }
 
-type IUser = IUserName | IUserEmail | IUserNameAndEmail;
+type ITokenUser = IUserName | IUserEmail | IUserNameAndEmail;
 
-function generateAccessToken(user: IUser): string | null {
+function generateAccessToken(user: ITokenUser): string | null {
     if (env?.ACCESS_TOKEN_SECRET === undefined) return null;
     return jwt.sign(user, env?.ACCESS_TOKEN_SECRET, { expiresIn: "10m" });
 }
 
-function generateRefreshToken(user: IUser) {
+function generateRefreshToken(user: ITokenUser) {
     if (env?.REFRESH_TOKEN_SECRET === undefined) return null;
     return jwt.sign(user, env.REFRESH_TOKEN_SECRET, { expiresIn: "2d" });
 }
@@ -66,5 +66,5 @@ export {
     updateOrCreateToken,
     generateUsername2,
     
-    IUser,
+    ITokenUser,
 }

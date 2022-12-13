@@ -2,11 +2,12 @@ import express from "express";
 const router = express.Router();
 
 import { User as UserModel, IUser } from "../../../schemas/user";
-import { authenticateToken, checkPermissions } from "../../../middleware/auth";
-import { isAdmin, isUser, isOwnerOrAdmin, isOwnerOrSuperuser, isSuperuser } from "../../../permissions/auth";
+import { authenticateToken, checkAuthPermissions } from "../../../middleware/auth";
+import { isAdmin, isUser, isUserOrAdmin, isSuperuser } from "../../../permissions/auth";
 import { ERRORS, MSG_TYPES, log } from "../../../utils/logging";
 import { Request } from "../types";
 
+// TODO: Fix this - Make it similar to the isUserAuthorized in "routes/items.ts"
 function isUserUnauthorized(user: any, userObj: IUser): (string | boolean)[] {
     if (!isUser(user, userObj?._id.toString())) { 
         // CLIENT IS NOT REQUESTED USER
@@ -54,7 +55,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
     const userId = req.params.id;
 
     try {
-        if (isOwnerOrAdmin(user, userId)) {
+        if (isUserOrAdmin(user, userId)) {
             const userObj = await UserModel.findById(userId);
             if (userObj === null) {
                 return res.status(404).json({ [MSG_TYPES.ERROR]: "Could not find user with specified ID" });
@@ -74,7 +75,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
 });
 
 // ========== UPDATE USER ==========
-router.patch("/:id", authenticateToken, checkPermissions, async (req: Request, res: express.Response) => {
+router.patch("/:id", authenticateToken, checkAuthPermissions, async (req: Request, res: express.Response) => {
     const { user, body } = req;
     const userId = req.params.id;
     const update_options = { new: true, lean: true, runValidators: true }
