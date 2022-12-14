@@ -10,7 +10,7 @@ import * as EmailValidator from "email-validator";
  
 import { IUser, User as UserSchema } from "../../../schemas/user";
 import { Token as TokenSchema } from "../../../schemas/token";
-import { generateAccessToken, generateRefreshToken, IUser as UtilsIUser } from "../../../utils/auth";
+import { generateAccessToken, generateRefreshToken, ITokenUser as UtilsIUser } from "../../../utils/auth";
 import { MSG_TYPES, log } from "../../../utils/logging";
 
 

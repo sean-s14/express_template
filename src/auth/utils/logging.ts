@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 const env: any = process.env;
 
-function log(msg: string) {
+function log(msg: any) {
     if (env.NODE_ENV !== 'test') {
         console.log(msg);
     }
