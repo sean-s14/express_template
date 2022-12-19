@@ -50,7 +50,7 @@ router.post("/", authenticateToken, async (req: any, res: express.Response) => {
     const { user, body } = req;
 
     try {
-        const item = new ItemModel({ ...body, userId: user.id });
+        const item = new ItemModel({ ...body, userId: user._id });
         await item.save();
         return res.status(201).json(item);
     } catch(e: any) {
@@ -64,7 +64,7 @@ router.get("/all", authenticateToken, async (req: any, res: express.Response) =>
     const { user } = req;
 
     try {
-        const allItems = await ItemModel.find({ userId: user.id });
+        const allItems = await ItemModel.find({ userId: user._id });
         return res.status(200).json(allItems);
     } catch(e: any) {
         log(e)
@@ -92,7 +92,7 @@ router.get("/all/:id", authenticateToken, async (req: any, res: express.Response
         }
 
         { // ===== IS USER OWNER =====
-            if (user.id === id) {
+            if (user._id === id) {
                 return res.status(200).json(allItems);
             }
         }

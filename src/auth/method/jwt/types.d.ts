@@ -1,10 +1,8 @@
 import express from "express";
+import { ITokenUser } from "../../utils/auth";
 
-export interface JWT_User {
-    username: string;
-    email?: string;
-    id: string;
-    role: string;
+
+export interface JWT_User extends ITokenUser {
     iat: number;
     exp: number;
 }

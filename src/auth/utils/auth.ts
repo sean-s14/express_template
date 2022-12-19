@@ -9,29 +9,15 @@ import { generateUsername } from "unique-username-generator";
 import { IToken, Token as TokenSchema } from "../schemas/token";
 import { User as UserSchema } from "../schemas/user";
 
-interface IUserBase {
-    id?: mongoose.Types.ObjectId;
-    role?: string;
-}
-
-interface IUserName extends IUserBase {
+interface ITokenUser {
+    _id: string;
     username: string;
+    role: string;
 }
-
-interface IUserEmail extends IUserBase {
-    email: string;
-}
-
-interface IUserNameAndEmail extends IUserBase {
-    username: string;
-    email: string;
-}
-
-type ITokenUser = IUserName | IUserEmail | IUserNameAndEmail;
 
 function generateAccessToken(user: ITokenUser): string | null {
     if (env?.ACCESS_TOKEN_SECRET === undefined) return null;
-    return jwt.sign(user, env?.ACCESS_TOKEN_SECRET, { expiresIn: "10m" });
+    return jwt.sign(user, env?.ACCESS_TOKEN_SECRET, { expiresIn: "30m" });
 }
 
 function generateRefreshToken(user: ITokenUser) {
@@ -46,7 +32,7 @@ const updateOrCreateToken = async (user: any, tokens: IToken) => {
             refresh_token: tokens.refresh_token,
             access_token: tokens.access_token,
         },
-        { new: true, upsert: true}
+        { new: true, upsert: true }
     );
 }
 

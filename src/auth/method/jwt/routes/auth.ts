@@ -10,9 +10,10 @@ import * as EmailValidator from "email-validator";
  
 import { IUser, User as UserSchema } from "../../../schemas/user";
 import { Token as TokenSchema } from "../../../schemas/token";
-import { generateAccessToken, generateRefreshToken, ITokenUser as UtilsIUser } from "../../../utils/auth";
+import { generateAccessToken, generateRefreshToken, ITokenUser } from "../../../utils/auth";
 import { MSG_TYPES, log } from "../../../utils/logging";
 
+const refreshTokenOptions = { httpOnly: true, signed: true, secure: true };
 
 // =============== SIGNUP ===============
 router.post("/signup", async (req: express.Request, res: express.Response) => {
@@ -118,13 +119,10 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
     }
 
     { // ===== GENERATE ACCESS & REFRESH TOKENS =====
-        let user2: UtilsIUser = { email: username, username: username, id: user._id, role: user.role };
-        if (username.includes('@')) {
-            // @ts-ignore
-            delete user2["username"];
-        } else {
-            // @ts-ignore
-            delete user2["email"];
+        let user2: ITokenUser = {
+            _id: user._id.toString(),
+            role: user.role.toString(),
+            username: user.username.toString(),
         }
         
         var accessToken = generateAccessToken(user2);
@@ -161,9 +159,9 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
         });
     }
 
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, signed: true, secure: true });
+    res.cookie("refreshToken", refreshToken, refreshTokenOptions);
 
-    return res.json({ accessToken: accessToken });
+    return res.status(200).json({ accessToken: accessToken });
 });
 
 // =============== REFRESH TOKEN ===============
@@ -184,10 +182,9 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
         if (err) return res.status(401).json({ [MSG_TYPES.ERROR]: "Refresh token is either invalid or has expired" });
 
         const new_user = { 
-            email: user.email, 
-            username: user.username, 
-            id: user._id, 
-            role: user.role
+            _id: user._id.toString(),
+            role: user.role.toString(),
+            username: user.username.toString(), 
         }
         // ===== GENERATE ACCESS & REFRESH TOKENS ===== 
         const accessToken = generateAccessToken(new_user);
@@ -203,7 +200,7 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
             return res.status(500).json(e.errors);
         }
 
-        res.cookie("refreshToken", newRefreshToken, { httpOnly: true, signed: true, secure: true });
+        res.cookie("refreshToken", newRefreshToken, refreshTokenOptions);
 
         return res.status(200).json({ accessToken: accessToken });
     })
@@ -213,7 +210,7 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
 router.delete("/logout", async (req: express.Request, res: express.Response) => {
     const { refreshToken } = req.signedCookies;
     if (refreshToken) {
-        res.clearCookie("refreshToken", { httpOnly: true, signed: true, secure: true });
+        res.clearCookie("refreshToken", refreshTokenOptions);
     }
     try {
         const token = await TokenSchema.findOneAndDelete({ refresh_token: refreshToken });
@@ -225,7 +222,7 @@ router.delete("/logout", async (req: express.Request, res: express.Response) => 
         }
     } catch(e: any) {
         log(e);
-        return res.status(500).json(e.message);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 })
 

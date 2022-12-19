@@ -13,9 +13,12 @@ function authenticateToken(req: Request, res: express.Response, next: Function) 
     const token = authHeader && authHeader.split(" ")[1];
     if (token == null) return res.status(401).json({ [MSG_TYPES.ERROR]: "No access token was received" });
 
-    jwt.verify(token, env.ACCESS_TOKEN_SECRET, (err: any, user: any) => {
+    jwt.verify(token, env.ACCESS_TOKEN_SECRET, async (err: any, user: any) => {
         if (err) {
             log(err);
+            if (err.name === 'TokenExpiredError') {
+                return res.status(401).json({ [MSG_TYPES.ERROR]: "Access token has expired" });
+            }
             return res.status(401).json({ [MSG_TYPES.ERROR]: "Access token could not be verified" });
         }
         req.user = user

@@ -4,7 +4,7 @@ import { generateUsername2 } from "../utils/auth";
 
 export interface IUser {
     _id: mongoose.Types.ObjectId,
-    role?: string,
+    role: string,
     username: { type: string, index: object, minLength: number, maxLength: number},
     email: { type: string, require: boolean, index: object, lowercase: boolean },
     verified?: boolean,
