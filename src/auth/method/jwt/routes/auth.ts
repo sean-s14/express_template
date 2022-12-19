@@ -79,7 +79,7 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
             await user.save();
         } catch(e: any) {
             log(e);
-            return res.status(500).json(e.message);
+            return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
         }
     }
 
@@ -197,7 +197,7 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
             )
         } catch(e: any) {
             log(e);
-            return res.status(500).json(e.errors);
+            return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
         }
 
         res.cookie("refreshToken", newRefreshToken, refreshTokenOptions);

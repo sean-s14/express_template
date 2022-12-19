@@ -9,6 +9,7 @@ import { google } from "googleapis";
 import { updateOrCreateToken } from "../../utils/auth";
 import googleSetup from "./setup";
 import { User as UserSchema } from "../../schemas/user";
+import { MSG_TYPES, log } from "../../../utils/logging";
 
 // secure: Only works with HTTPS
 // httpOnly: Not accessible to JavaScript on the client-side
@@ -214,17 +215,17 @@ router.get("/me", async (req: express.Request, res: express.Response) => {
             return res.status(200).json(userInfo);
         } catch(e: any) {
             console.error(e);
-            return res.status(500).json({ error: e.message });
+            return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
         }
     } else {
         const tokens = { access_token: access_token, refresh_token: refresh_token };
         try{
             const userInfo = await getUserInfo(tokens);
-            if (!userInfo) return res.status(500).json({ error: "Unable to retrieve user info" })
+            if (!userInfo) return res.status(500).json({ [MSG_TYPES.ERROR]: "Unable to retrieve user info" })
             return res.status(200).json({ user_info: userInfo });
         } catch(e: any) {
             console.error(e);
-            return res.status(500).json({ error: e.message });
+            return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
         }
     }
 });

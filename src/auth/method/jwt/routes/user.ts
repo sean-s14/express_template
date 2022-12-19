@@ -30,7 +30,7 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
         } 
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.errors);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 });
 
@@ -80,7 +80,7 @@ router.delete("/", authenticateToken, async (req: Request, res: any) => {
         return res.status(200).json({ success: "Your account has successfully been deleted" });
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.errors);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 });
 

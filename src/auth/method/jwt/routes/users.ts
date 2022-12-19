@@ -45,7 +45,7 @@ router.get("/", authenticateToken, async (req: Request, res: express.Response) =
         }
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.errors);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 });
 
@@ -70,7 +70,7 @@ router.get("/:id", authenticateToken, async (req: Request, res: express.Response
         }
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.message);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 });
 
@@ -98,7 +98,7 @@ router.patch("/:id", authenticateToken, checkAuthPermissions, async (req: Reques
 
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.message);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 });
 
@@ -126,7 +126,7 @@ router.delete("/:id", authenticateToken, async (req: Request, res: express.Respo
         }
     } catch(e: any) {
         log(e)
-        return res.status(500).json(e.message);
+        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
     }
 });
 
