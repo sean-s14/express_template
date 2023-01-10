@@ -977,7 +977,7 @@ describe("Authentication with JWT", function () {
 			it(RESPONSES.BAD_REQUEST, function (done) {
 				request(app)
 					.delete(ROUTES.AUTH.LOGOUT)
-					.set("Cookie", "refreshToken=invalidTokenValue;")
+					.set("Cookie", "jwt_rToken=invalidTokenValue;")
 					.then((res: any) => {
 						const status = res.statusCode;
 						const body = res.body;
