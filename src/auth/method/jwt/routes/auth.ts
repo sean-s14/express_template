@@ -8,8 +8,8 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import * as EmailValidator from "email-validator";
 
-import { IUser, User as UserSchema } from "../../../schemas/user";
-import { Token as TokenSchema } from "../../../schemas/token";
+import { IUser, User as UserModel } from "../../../schemas/user";
+import { IToken, Token as TokenModel } from "../../../schemas/token";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -64,7 +64,7 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
 
       try {
         // Verify that no user with username/email already exists
-        const userExists = await UserSchema.findOne({ email: email });
+        const userExists = await UserModel.findOne({ email: email });
         if (userExists) {
           return res
             .status(400)
@@ -102,7 +102,7 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
   {
     // ========== CREATE USER ==========
     try {
-      const user = new UserSchema(userBody, {}, { runValidators: true });
+      const user = new UserModel(userBody, {}, { runValidators: true });
       await user.save();
       // TODO: Send email with verification code
     } catch (e: any) {
@@ -134,7 +134,7 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
 
   // ===== FIND USER WITH EMAIL/USERNAME =====
   try {
-    var user: IUser | null = await UserSchema.findOne({
+    var user: IUser | null = await UserModel.findOne({
       $or: [{ username: username }, { email: username }],
     });
     if (!user) {
@@ -188,16 +188,16 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
 
   // ===== CREATE OR UPDATE TOKENS IN DB =====
   try {
-    const tokenInDB = await TokenSchema.findOne({ user: user._id });
+    const tokenInDB = await TokenModel.findOne({ user: user._id });
     if (!tokenInDB) {
-      const token = new TokenSchema({
+      const token = new TokenModel({
         refresh_token: refreshToken,
         access_token: accessToken,
         user: user._id,
       });
       await token.save();
     } else {
-      const token = await TokenSchema.findOneAndUpdate(
+      const token = await TokenModel.findOneAndUpdate(
         { user: user._id },
         { refresh_token: refreshToken, access_token: accessToken }
       );
@@ -219,6 +219,8 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
 // =============== REFRESH TOKEN ===============
 router.post("/refresh", async (req: express.Request, res: express.Response) => {
   const { jwt_rToken: refreshToken } = req.signedCookies;
+  let userInDB: IUser | null;
+  let refreshTokenInDB: IToken | null;
 
   if (refreshToken == null)
     return res
@@ -227,13 +229,17 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
 
   try {
     // ===== FIND REFRESH TOKEN IN DATABASE =====
-    const refreshTokenInDB = await TokenSchema.findOne({
+    refreshTokenInDB = await TokenModel.findOne({
       refresh_token: refreshToken,
     });
-    if (!refreshTokenInDB)
+
+    if (refreshTokenInDB) {
+      userInDB = await UserModel.findById(refreshTokenInDB.user);
+    } else {
       return res.status(404).json({
         [MSG_TYPES.ERROR]: "Could not find refresh token in database",
       });
+    }
   } catch (e: any) {
     log(e);
     return res.json({
@@ -251,30 +257,37 @@ router.post("/refresh", async (req: express.Request, res: express.Response) => {
           [MSG_TYPES.ERROR]: "Refresh token is either invalid or has expired",
         });
 
-      const new_user = {
-        _id: user._id.toString(),
-        role: user.role.toString(),
-        username: user.username.toString(),
-      };
-      // ===== GENERATE ACCESS & REFRESH TOKENS =====
-      const accessToken = generateAccessToken(new_user);
-      const newRefreshToken = generateRefreshToken(new_user);
+      if (userInDB) {
+        const new_user = {
+          _id: userInDB._id.toString(),
+          role: userInDB.role.toString(),
+          username: userInDB.username.toString(),
+        };
+        // ===== GENERATE ACCESS & REFRESH TOKENS =====
+        const accessToken = generateAccessToken(new_user);
+        const newRefreshToken = generateRefreshToken(new_user);
 
-      try {
-        // ===== UPDATE TOKENS IN DB =====
-        const token = await TokenSchema.findOneAndUpdate(
-          { refresh_token: refreshToken },
-          { refresh_token: newRefreshToken, access_token: accessToken }
-        );
-        token?.save();
-      } catch (e: any) {
-        log(e);
-        return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
+        try {
+          // ===== UPDATE TOKENS IN DB =====
+          const token = await TokenModel.findOneAndUpdate(
+            { refresh_token: refreshToken },
+            { refresh_token: newRefreshToken, access_token: accessToken }
+          );
+          token?.save();
+        } catch (e: any) {
+          log(e);
+          return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
+        }
+
+        res.cookie("jwt_rToken", newRefreshToken, refreshTokenOptions);
+
+        return res.status(200).json({ accessToken: accessToken });
+      } else {
+        return res.status(404).json({
+          [MSG_TYPES.ERROR]:
+            "Could not find user matching refresh token in database",
+        });
       }
-
-      res.cookie("jwt_rToken", newRefreshToken, refreshTokenOptions);
-
-      return res.status(200).json({ accessToken: accessToken });
     }
   );
 });
@@ -288,7 +301,7 @@ router.delete(
       res.clearCookie("jwt_rToken", refreshTokenOptions);
     }
     try {
-      const token = await TokenSchema.findOneAndDelete({
+      const token = await TokenModel.findOneAndDelete({
         refresh_token: refreshToken,
       });
       if (token === null) {
