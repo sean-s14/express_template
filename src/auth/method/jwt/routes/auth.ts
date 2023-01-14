@@ -7,6 +7,8 @@ const router = express.Router();
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import * as EmailValidator from "email-validator";
+import sgMail from "@sendgrid/mail";
+sgMail.setApiKey(env.SENDGRID_API_KEY);
 
 import { IUser, User as UserModel } from "../../../schemas/user";
 import { IToken, Token as TokenModel } from "../../../schemas/token";
@@ -14,6 +16,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
   ITokenUser,
+  generateVerificationCode,
 } from "../../../utils/auth";
 import { MSG_TYPES, log } from "../../../utils/logging";
 
@@ -25,11 +28,12 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
   interface IUserBody {
     email?: string;
     password: string;
+    verification_code: string;
   }
-  var userBody: IUserBody = { password: "" };
+  var userBody: IUserBody = { password: "", verification_code: "" };
 
+  // ========== PASSWORD VALIDATION ==========
   {
-    // ========== PASSWORD VALIDATION ==========
     if (!password) {
       return res.status(400).json({ password: "Please enter a password" });
     }
@@ -53,8 +57,8 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
     }
   }
 
+  // ========== EMAIL VALIDATION ==========
   {
-    // ========== EMAIL VALIDATION ==========
     if (email) {
       if (!EmailValidator.validate(email)) {
         return res
@@ -85,8 +89,8 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
     }
   }
 
+  // ========== CREATE PASSWORD HASH ==========
   {
-    // ========== CREATE PASSWORD HASH ==========
     try {
       var salt = bcrypt.genSaltSync(13);
       var hash = await bcrypt.hash(password, salt);
@@ -99,12 +103,37 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
     }
   }
 
+  // ========== CREATE USER ==========
   {
-    // ========== CREATE USER ==========
+    const verificationCode = generateVerificationCode();
+    userBody.verification_code = verificationCode;
+
     try {
       const user = new UserModel(userBody, {}, { runValidators: true });
       await user.save();
-      // TODO: Send email with verification code
+
+      const msg = {
+        to: user.email.toString(),
+        from: "s.stocker04@outlook.com", // TODO: Change to your verified sender
+        subject: "Verify Account",
+        html: `Your verification code is <strong>${user.verification_code.toString()}</strong>`,
+      };
+
+      try {
+        const res = await sgMail.send(msg);
+        console.log(
+          "Signup Email Success Code :",
+          res[0].statusCode,
+          res[0].headers.date
+        );
+      } catch (e: any) {
+        console.error(e);
+        console.error(e.response.body);
+
+        return res.status(500).json({
+          [MSG_TYPES.ERROR]: `User was created, however verification code could not be sent to ${user.email.toString()}`,
+        });
+      }
     } catch (e: any) {
       log(e);
       return res.status(500).json({ [MSG_TYPES.ERROR]: e.message });
@@ -118,7 +147,9 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
 
 // =============== LOGIN ===============
 router.post("/login", async (req: express.Request, res: express.Response) => {
-  const { username, password } = req.body;
+  const { username, password, code: verification_code } = req.body;
+  let user;
+  let isValid: boolean | null;
 
   // ===== CHECK FOR USERNAME & PASSWORD =====
   {
@@ -134,7 +165,7 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
 
   // ===== FIND USER WITH EMAIL/USERNAME =====
   try {
-    var user: IUser | null = await UserModel.findOne({
+    user = await UserModel.findOne({
       $or: [{ username: username }, { email: username }],
     });
     if (!user) {
@@ -149,9 +180,74 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
       .json({ [MSG_TYPES.ERROR]: "There was an error when logging in" });
   }
 
+  if (!user.verified) {
+    // ===== VERIFY USER =====
+    if (verification_code) {
+      try {
+        if (
+          user.verification_code.toString() === verification_code.toString()
+        ) {
+          user.verified = true;
+          await user.save();
+        }
+      } catch (e: any) {
+        console.error(e);
+        return res
+          .status(500)
+          .json({ [MSG_TYPES.ERROR]: "Unable to verify account" });
+      }
+    } else {
+      // ===== CREATE NEW VERIFICATION CODE AND UPDATE USER =====
+      {
+        const verificationCode = generateVerificationCode();
+        user.verification_code = verificationCode;
+        try {
+          await user.save();
+        } catch (e: any) {
+          console.error(e);
+          return res.status(500).json({
+            [MSG_TYPES.ERROR]:
+              "There was an error when updating your verification code",
+          });
+        }
+      }
+
+      // ===== SEND EMAIL WITH NEW CODE =====
+      {
+        const msg = {
+          to: user.email.toString(),
+          from: "s.stocker04@outlook.com", // TODO: Change to your verified sender
+          subject: "Verify Account",
+          html: `Your verification code is <strong>${user.verification_code.toString()}</strong>`,
+        };
+
+        try {
+          const res = await sgMail.send(msg);
+          console.log(
+            "Verify Account Success Code :",
+            res[0].statusCode,
+            res[0].headers.date
+          );
+        } catch (e: any) {
+          console.error(e);
+          console.error(e.response.body);
+
+          return res.status(500).json({
+            [MSG_TYPES.ERROR]: `Unable to send verification code to ${user.email.toString()}`,
+          });
+        }
+      }
+
+      return res.status(423).json({
+        [MSG_TYPES.ERROR]:
+          "This account must first be verified using a verification code",
+      });
+    }
+  }
+
   // ===== VALIDATE PASSWORD =====
   try {
-    var isValid = await bcrypt.compare(password, user.password || "");
+    isValid = await bcrypt.compare(password, user.password || "");
     if (!isValid)
       return res.status(400).json({ password: "Password entered is invalid" });
   } catch (e: any) {
