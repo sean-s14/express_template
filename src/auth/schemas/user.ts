@@ -13,7 +13,7 @@ export interface IUser {
   };
   email: { type: string; require: boolean; index: object; lowercase: boolean };
   verified?: boolean;
-  verification_code: string;
+  code: string;
   password?: string;
   firstName?: string;
   lastName?: string;
@@ -43,7 +43,7 @@ const userSchema = new mongoose.Schema<IUser>({
     lowercase: true,
   },
   verified: { type: Boolean, default: false },
-  verification_code: { type: String, default: "" },
+  code: { type: String, default: "" },
   password: String,
   firstName: {
     type: String,

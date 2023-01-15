@@ -28,9 +28,9 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
   interface IUserBody {
     email?: string;
     password: string;
-    verification_code: string;
+    code: string;
   }
-  var userBody: IUserBody = { password: "", verification_code: "" };
+  var userBody: IUserBody = { password: "", code: "" };
 
   // ========== PASSWORD VALIDATION ==========
   {
@@ -106,7 +106,7 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
   // ========== CREATE USER ==========
   {
     const verificationCode = generateVerificationCode();
-    userBody.verification_code = verificationCode;
+    userBody.code = verificationCode;
 
     try {
       const user = new UserModel(userBody, {}, { runValidators: true });
@@ -116,7 +116,7 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
         to: user.email.toString(),
         from: "s.stocker04@outlook.com", // TODO: Change to your verified sender
         subject: "Verify Account",
-        html: `Your verification code is <strong>${user.verification_code.toString()}</strong>`,
+        html: `Your verification code is <strong>${user.code.toString()}</strong>`,
       };
 
       try {
@@ -146,8 +146,14 @@ router.post("/signup", async (req: express.Request, res: express.Response) => {
 });
 
 // =============== LOGIN ===============
+/**
+ * This route covers the following three types of login attempts
+ * - as verified user
+ * - as unverified user
+ * - as unverified user with code
+ */
 router.post("/login", async (req: express.Request, res: express.Response) => {
-  const { username, password, code: verification_code } = req.body;
+  const { username, password, code: code } = req.body;
   let user;
   let isValid: boolean | null;
 
@@ -182,11 +188,9 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
 
   if (!user.verified) {
     // ===== VERIFY USER =====
-    if (verification_code) {
+    if (code) {
       try {
-        if (
-          user.verification_code.toString() === verification_code.toString()
-        ) {
+        if (user.code.toString() === code.toString()) {
           user.verified = true;
           await user.save();
         }
@@ -200,7 +204,7 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
       // ===== CREATE NEW VERIFICATION CODE AND UPDATE USER =====
       {
         const verificationCode = generateVerificationCode();
-        user.verification_code = verificationCode;
+        user.code = verificationCode;
         try {
           await user.save();
         } catch (e: any) {
@@ -216,9 +220,9 @@ router.post("/login", async (req: express.Request, res: express.Response) => {
       {
         const msg = {
           to: user.email.toString(),
-          from: "s.stocker04@outlook.com", // TODO: Change to your verified sender
+          from: env.SENDGRID_VERIFIED_SENDER,
           subject: "Verify Account",
-          html: `Your verification code is <strong>${user.verification_code.toString()}</strong>`,
+          html: `Your verification code is <strong>${user.code.toString()}</strong>`,
         };
 
         try {
